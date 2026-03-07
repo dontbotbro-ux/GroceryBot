@@ -1,0 +1,29 @@
+{
+  "enabled": false,
+  "phoneNumber": "5403948446",
+  "scheduleType": "daily",
+  "weekdays": [
+    "SUN",
+    "MON",
+    "TUE",
+    "WED",
+    "THU",
+    "FRI",
+    "SAT"
+  ],
+  "time": "09:00",
+  "timezone": "America/New_York",
+  "summaryMode": "all",
+  "maxDealsPerStore": 6,
+  "storeIds": [
+    "wegmans",
+    "walmart",
+    "aldi",
+    "lidl",
+    "target"
+  ],
+  "watchlistIds": [],
+  "lastSentAt": "2026-03-07T17:26:43.156Z",
+  "lastRefreshAt": "2026-03-07T17:26:14.698Z",
+  "lastError": ""
+}

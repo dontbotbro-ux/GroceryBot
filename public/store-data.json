@@ -1,0 +1,491 @@
+{
+  "generatedAt": "2026-03-07T17:37:44.087Z",
+  "stores": [
+    {
+      "id": "wegmans",
+      "name": "Wegmans",
+      "theme": "#006341",
+      "logo": "/logos/wegmans.svg",
+      "sourceUrl": "https://www.wegmans.com/shop/featured/Hot_Zone_Prices",
+      "sourceLabel": "Hot Zone Prices",
+      "fetchedAt": "2026-03-07T17:37:44.087Z",
+      "status": "ok",
+      "deals": [
+        {
+          "id": "wegmans-bananas-sold-by-the-each-7",
+          "title": "Bananas, Sold by the Each",
+          "price": "$0.19/ea",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Unit Unit price is:($0.49/lb.",
+          "expires": "",
+          "category": "",
+          "image": "https://images.wegmans.com/is/image/wegmanscsprod/92685_PrimaryImage?v=1.1"
+        },
+        {
+          "id": "wegmans-iceberg-lettuce-9",
+          "title": "Iceberg Lettuce",
+          "price": "$2.19/ea",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Unit Unit price is:($2.19/each",
+          "expires": "",
+          "category": "",
+          "image": "https://images.wegmans.com/is/image/wegmanscsprod/5595_PrimaryImage?v=1.1"
+        },
+        {
+          "id": "wegmans-seeded-cucumbers-13",
+          "title": "Seeded Cucumbers",
+          "price": "$0.89/ea",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Unit Unit price is:($0.89/each",
+          "expires": "",
+          "category": "",
+          "image": "https://images.wegmans.com/is/image/wegmanscsprod/92613_PrimaryImage?v=1.1"
+        },
+        {
+          "id": "wegmans-strawberries-family-pack-1",
+          "title": "Strawberries, FAMILY PACK",
+          "price": "$5.99/ea",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Unit Unit price is:($0.19/ounce",
+          "expires": "",
+          "category": "",
+          "image": "https://images.wegmans.com/is/image/wegmanscsprod/128594_PrimaryImage?v=1.1"
+        },
+        {
+          "id": "wegmans-tomatoes-on-the-vine-cluster-5",
+          "title": "Tomatoes On-The-Vine, Cluster",
+          "price": "$2.89/ea",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Unit Unit price is:($1.99/lb.",
+          "expires": "",
+          "category": "",
+          "image": "https://images.wegmans.com/is/image/wegmanscsprod/80034_PrimaryImage?v=1.1"
+        },
+        {
+          "id": "wegmans-watermelon-seedless-2",
+          "title": "Watermelon, Seedless",
+          "price": "$10.99/ea",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Unit Unit price is:($10.99/each",
+          "expires": "",
+          "category": "",
+          "image": "https://images.wegmans.com/is/image/wegmanscsprod/189514_PrimaryImage?v=11.1"
+        },
+        {
+          "id": "wegmans-wegmans-0-greek-strawberry-nonfat-yogurt-76",
+          "title": "Wegmans 0% Greek Strawberry Nonfat Yogurt",
+          "price": "$0.79/ea",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Unit Unit price is:($0.15/ounce",
+          "expires": "",
+          "category": "",
+          "image": "https://images.wegmans.com/is/image/wegmanscsprod/25600_PrimaryImage?v=1.1"
+        },
+        {
+          "id": "wegmans-wegmans-0-greek-triple-berry-nonfat-yogurt-77",
+          "title": "Wegmans 0% Greek Triple Berry Nonfat Yogurt",
+          "price": "$0.79/ea",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Unit Unit price is:($0.15/ounce",
+          "expires": "",
+          "category": "",
+          "image": "https://images.wegmans.com/is/image/wegmanscsprod/35092_PrimaryImage?v=1.1"
+        }
+      ],
+      "rangeLabel": "Current Hot Zone grocery prices"
+    },
+    {
+      "id": "walmart",
+      "name": "Walmart",
+      "theme": "#0071ce",
+      "logo": "/logos/walmart.svg",
+      "sourceUrl": "https://www.walmart.com/c/kp/groceries-deals",
+      "sourceLabel": "Groceries Deals",
+      "fetchedAt": "2026-03-07T17:37:44.087Z",
+      "status": "ok",
+      "deals": [
+        {
+          "id": "walmart-fresh-whole-russet-potatoes-5-lb-bag-7",
+          "title": "Fresh Whole Russet Potatoes 5 lb Bag",
+          "price": "$2.47",
+          "previousPrice": "$3.74",
+          "savings": "Save $1.27",
+          "detail": "",
+          "expires": "",
+          "category": "Rollback",
+          "link": "https://www.walmart.com/ip/Fresh-Whole-Russet-Potatoes-5lb-bag/10447837?classType=REGULAR&athbdg=L1300",
+          "image": "https://i5.walmartimages.com/seo/Fresh-Whole-Russet-Potatoes-5lb-bag_39e383c7-abe5-42fa-9078-5d6d0bb5c0d4.8fc19a526bf85bd640d369c4c85a2bf2.jpeg?odnHeight=576&odnWidth=576&odnBg=FFFFFF"
+        },
+        {
+          "id": "walmart-gorton-s-crunchy-breaded-fish-100-whole-fish-fillets-not-minced-wild-caught-alaskan-pollock-with-crunchy-panko-breadcrumbs-frozen-10-count-19-ounce-resealable-bag-3",
+          "title": "Gorton’s Crunchy Breaded Fish 100% Whole Fish Fillets (Not Minced), Wild Caught Alaskan Pollock with Crunchy Panko Breadcrumbs, Frozen, 10 Count, 19 Ounce Resealable Bag",
+          "price": "$4.87",
+          "previousPrice": "$6.86",
+          "savings": "Save $1.99",
+          "detail": "",
+          "expires": "",
+          "category": "Rollback",
+          "image": "https://i5.walmartimages.com/seo/Gorton-s-Crunchy-Breaded-Fish-100-Whole-Fish-Fillets-Not-Minced-Wild-Caught-Alaskan-Pollock-Crunchy-Panko-Breadcrumbs-Frozen-10-Count-19-Ounce-Reseal_e8597f30-1a6d-4fcd-a72e-04920659ddb5.1a8d7758b4dd75da5fecb86e12647a93.jpeg?odnHeight=576&odnWidth=576&odnBg=FFFFFF"
+        },
+        {
+          "id": "walmart-rice-a-roni-long-grain-wild-rice-mix-packaged-meal-4-3-oz-shelf-stable-box-8",
+          "title": "Rice-A-Roni Long Grain & Wild Rice Mix Packaged Meal, 4.3 oz Shelf-Stable Box",
+          "price": "$1.33",
+          "previousPrice": "$1.48",
+          "savings": "Save $0.15",
+          "detail": "",
+          "expires": "",
+          "category": "Rollback",
+          "link": "https://www.walmart.com/ip/Rice-A-Roni-Long-Grain-Wild-Rice-Mix-Packaged-Meal-4-3-oz-Shelf-Stable-Box/13281203?classType=VARIANT&athbdg=L1300",
+          "image": "https://i5.walmartimages.com/seo/Rice-A-Roni-Long-Grain-Wild-Rice-Mix-Packaged-Meal-4-3-oz-Shelf-Stable-Box_5c06ae98-b4a5-494d-b379-340b744a9641.c8919dd11f3086bd7cefaab639db6d24.jpeg?odnHeight=576&odnWidth=576&odnBg=FFFFFF"
+        },
+        {
+          "id": "walmart-cap-n-crunch-sweetened-corn-oat-cereal-40-oz-jumbo-bag-2",
+          "title": "Cap'n Crunch Sweetened Corn & Oat Cereal, 40 oz Jumbo Bag",
+          "price": "$2.97",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "",
+          "expires": "",
+          "category": "Groceries deal",
+          "image": "https://i5.walmartimages.com/seo/Cap-n-Crunch-Breakfast-Cereal-Original-40oz-Bag_0e4cd79c-c8b4-4f20-8e3a-064e46332fcc.14dc152c67e8793ad804cbda52b8347c.jpeg?odnHeight=576&odnWidth=576&odnBg=FFFFFF"
+        },
+        {
+          "id": "walmart-fresh-banana-each-5",
+          "title": "Fresh Banana, Each",
+          "price": "$0.20",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "",
+          "expires": "",
+          "category": "Groceries deal",
+          "link": "https://www.walmart.com/ip/Fresh-Banana-Each/44390948?classType=REGULAR&athbdg=L1600",
+          "image": "https://i5.walmartimages.com/seo/Fresh-Banana-Each_5939a6fa-a0d6-431c-88c6-b4f21608e4be.f7cd0cc487761d74c69b7731493c1581.jpeg?odnHeight=576&odnWidth=576&odnBg=FFFFFF"
+        },
+        {
+          "id": "walmart-fresh-cucumber-each-6",
+          "title": "Fresh Cucumber, Each",
+          "price": "$0.66",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "",
+          "expires": "",
+          "category": "Groceries deal",
+          "link": "https://www.walmart.com/ip/Fresh-Cucumber-Each/44390954?classType=REGULAR",
+          "image": "https://i5.walmartimages.com/seo/Fresh-Cucumber-Each_5985ccc8-109e-411d-aca7-556ab217e1da.e3770028b0d00b3fa4e6a40c4e630ef9.jpeg?odnHeight=576&odnWidth=576&odnBg=FFFFFF"
+        },
+        {
+          "id": "walmart-good-thins-sea-salt-corn-snacks-gluten-free-crackers-snack-crackers-3-5-oz-1",
+          "title": "GOOD THINS Sea Salt Corn Snacks Gluten Free Crackers, Snack Crackers, 3.5 oz",
+          "price": "$3.77",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "",
+          "expires": "",
+          "category": "Groceries deal",
+          "image": "https://i5.walmartimages.com/seo/Good-Thins-Sea-Salt-Corn-Snacks-Gluten-Free-Crackers-3-5-oz_2c250665-c02a-4d78-a003-da50b1bc4a31.6a87d8ccd1236fbd6c7754a9a234ceb8.jpeg?odnHeight=576&odnWidth=576&odnBg=FFFFFF"
+        },
+        {
+          "id": "walmart-great-value-large-white-eggs-18-count-9",
+          "title": "Great Value Large White Eggs, 18 Count",
+          "price": "$2.47",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "",
+          "expires": "",
+          "category": "Groceries deal",
+          "link": "https://www.walmart.com/ip/Great-Value-Large-White-Eggs-18-Count/172844767?classType=REGULAR&athbdg=L1600",
+          "image": "https://i5.walmartimages.com/seo/Great-Value-Large-White-Eggs-18-Count_29020399-6000-44c9-b24f-e62ae46465c0_1.4930c3b92bbbc2fa70be370e40f85446.jpeg?odnHeight=576&odnWidth=576&odnBg=FFFFFF"
+        }
+      ],
+      "rangeLabel": "Current Walmart grocery deals"
+    },
+    {
+      "id": "aldi",
+      "name": "Aldi",
+      "theme": "#00539f",
+      "logo": "/logos/aldi.svg",
+      "sourceUrl": "https://www.aldi.us/weekly-specials/this-weeks-aldi-finds",
+      "sourceLabel": "This Week's ALDI Finds",
+      "fetchedAt": "2026-03-07T17:37:44.087Z",
+      "status": "ok",
+      "deals": [
+        {
+          "id": "aldi-bbq-beast-smokehouse-style-rising-crust-pizza-26-6-oz-17",
+          "title": "BBQ Beast Smokehouse Style Rising Crust Pizza, 26.6 oz",
+          "price": "$5.29",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Mama Cozzi's Pizza Kitchen • 26.65 oz",
+          "expires": "",
+          "category": "ALDI Finds",
+          "link": "https://www.aldi.us/product/mama-cozzi-s-pizza-kitchen-bbq-beast-smokehouse-style-rising-crust-pizza-26-6-oz-0000000000006785",
+          "image": "https://dm.cms.aldi.cx/is/image/prod1amer/product/jpg/scaleWidth/232/78d3b341-8b2f-4a63-b026-22afb2453a4a/BBQ%20Beast%20Smokehouse%20Style%20Rising%20Crust%20Pizza%2026.6%20oz"
+        },
+        {
+          "id": "aldi-berry-cherry-glacier-flavored-energy-drink-18-pack-12-fl-oz-bottle-35",
+          "title": "Berry Cherry Glacier Flavored Energy Drink - 18 pack, 12 fl oz bottle",
+          "price": "$10.78",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Gatorade • 216 fl oz",
+          "expires": "",
+          "category": "ALDI Finds",
+          "link": "https://www.aldi.us/product/gatorade-berry-cherry-glacier-flavored-energy-drink-18-pack-12-fl-oz-bottle-0000000000018902",
+          "image": "https://dm.cms.aldi.cx/is/image/prod1amer/product/jpg/scaleWidth/232/5038bb99-4e4c-441a-bf7c-2e41a93425cf/Berry%20Cherry%20Glacier%20Flavored%20Energy%20Drink%20%2018%20pack%2012%20fl%20oz%20bottle"
+        },
+        {
+          "id": "aldi-caprese-pinsa-pizza-13-oz-19",
+          "title": "Caprese Pinsa Pizza, 13 oz",
+          "price": "$5.49",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Mama Cozzi's Pizza Kitchen • 13.05 oz",
+          "expires": "",
+          "category": "ALDI Finds",
+          "link": "https://www.aldi.us/product/mama-cozzi-s-pizza-kitchen-caprese-pinsa-pizza-13-oz-0000000000049977",
+          "image": "https://dm.cms.aldi.cx/is/image/prod1amer/product/jpg/scaleWidth/232/64b5d098-b9d7-47ee-8ceb-7da16f41ee13/Caprese%20Pinsa%20Pizza%2013%20oz"
+        },
+        {
+          "id": "aldi-cheese-caramel-mix-flavored-popcorn-7-5-oz-4",
+          "title": "Cheese & Caramel Mix Flavored Popcorn, 7.5 oz",
+          "price": "$3.69",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Cretors • 7.5 oz",
+          "expires": "",
+          "category": "ALDI Finds",
+          "link": "https://www.aldi.us/product/cretors-cheese-caramel-mix-flavored-popcorn-7-5-oz-0000000000015588",
+          "image": "https://dm.cms.aldi.cx/is/image/prod1amer/product/jpg/scaleWidth/232/1bc22a43-5b61-438b-9e44-725d97c89612/Cheese%20%20Caramel%20Mix%20Flavored%20Popcorn%207.5%20oz"
+        },
+        {
+          "id": "aldi-cherry-limeade-flavored-energy-drink-16-fl-oz-can-36",
+          "title": "Cherry Limeade Flavored Energy Drink, 16 fl oz can",
+          "price": "$1.69",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Prime • 16 fl oz",
+          "expires": "",
+          "category": "ALDI Finds",
+          "link": "https://www.aldi.us/product/prime-cherry-limeade-flavored-energy-drink-16-fl-oz-can-0000000000065551",
+          "image": "https://dm.cms.aldi.cx/is/image/prod1amer/product/jpg/scaleWidth/232/c4f5acee-73d6-44e6-98d2-8c6ca1773d72/Cherry%20Limeade%20Flavored%20Energy%20Drink%2016%20fl%20oz%20can"
+        },
+        {
+          "id": "aldi-chicken-momos-15-oz-20",
+          "title": "Chicken Momos, 15 oz",
+          "price": "$6.49",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Journey To... • 15 oz",
+          "expires": "",
+          "category": "ALDI Finds",
+          "link": "https://www.aldi.us/product/journey-to-chicken-momos-15-oz-0000000000039788",
+          "image": "https://dm.cms.aldi.cx/is/image/prod1amer/product/jpg/scaleWidth/232/755a2ae8-0759-4c7a-8611-c4812caf94bf/Chicken%20Momos%2015%20oz"
+        },
+        {
+          "id": "aldi-chicken-tikka-masala-16-oz-24",
+          "title": "Chicken Tikka Masala, 16 oz",
+          "price": "$6.49",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Journey To... • 16 oz",
+          "expires": "",
+          "category": "ALDI Finds",
+          "link": "https://www.aldi.us/product/journey-to-chicken-tikka-masala-16-oz-0000000000062996",
+          "image": "https://dm.cms.aldi.cx/is/image/prod1amer/product/jpg/scaleWidth/232/6e743f6a-57c6-4a02-8379-68fd89de3b7c/Chicken%20Tikka%20Masala%2016%20oz"
+        },
+        {
+          "id": "aldi-chicken-tikka-samosa-10-2-oz-21",
+          "title": "Chicken Tikka Samosa, 10.2 oz",
+          "price": "$3.99",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Journey To... • 10.2 oz",
+          "expires": "",
+          "category": "ALDI Finds",
+          "link": "https://www.aldi.us/product/journey-to-chicken-tikka-samosa-10-2-oz-0000000000021115",
+          "image": "https://dm.cms.aldi.cx/is/image/prod1amer/product/jpg/scaleWidth/232/317c9573-21c5-48a1-92a0-5480a19c3550/Chicken%20Tikka%20Samosa%2010.2%20oz"
+        }
+      ],
+      "rangeLabel": "03/04/2026 - 03/11/2026"
+    },
+    {
+      "id": "lidl",
+      "name": "Lidl",
+      "theme": "#0050aa",
+      "logo": "/logos/lidl.svg",
+      "sourceUrl": "https://www.lidl.com/",
+      "sourceLabel": "myLidl Deals",
+      "fetchedAt": "2026-03-07T17:37:44.087Z",
+      "status": "ok",
+      "deals": [
+        {
+          "id": "lidl-cara-cara-oranges-3-lb-1",
+          "title": "Cara Cara oranges, 3 lb.",
+          "price": "$2.69",
+          "previousPrice": "$3.89",
+          "savings": "save $1.20",
+          "detail": "",
+          "expires": "",
+          "category": "myLidl Deals",
+          "link": "https://www.lidl.com/products/980220001",
+          "image": "https://production-endpoint.azureedge.net/images/6COJ2C9J75FJAC1GF0QJ0C0/b21c88b1-bfef-469b-8b2a-48b09ed9045a/311139_500x500_500x500.tif.jpg"
+        },
+        {
+          "id": "lidl-dulano-applewood-thick-cut-bacon-2",
+          "title": "Dulano applewood thick cut bacon",
+          "price": "$5.99",
+          "previousPrice": "$8.99",
+          "savings": "save $3.00",
+          "detail": "",
+          "expires": "",
+          "category": "myLidl Deals",
+          "link": "https://www.lidl.com/products/1357261",
+          "image": "https://production-endpoint.azureedge.net/images/70S3ID9P6PFJAC1GF0QJ0C0/9ae9c986-1ee7-4a01-a1d3-e6bfefac78bc/889596_500x500_500x500.tif.jpg"
+        },
+        {
+          "id": "lidl-ocean-sea-frozen-bay-scallops-3",
+          "title": "Ocean Sea frozen bay scallops",
+          "price": "$6.99",
+          "previousPrice": "$8.99",
+          "savings": "save $2.00",
+          "detail": "",
+          "expires": "",
+          "category": "myLidl Deals",
+          "link": "https://www.lidl.com/products/1485683",
+          "image": "https://production-endpoint.azureedge.net/images/6SS3ADHO71FJAC1GF0QJ0C0/cd48630d-90ea-48f9-a992-93e5ff97a90a/785688_500x500_500x500.tif.jpg"
+        },
+        {
+          "id": "lidl-smithfield-baby-back-ribs-4",
+          "title": "Smithfield® baby back ribs",
+          "price": "$3.29",
+          "previousPrice": "$3.99",
+          "savings": "save $0.70",
+          "detail": "",
+          "expires": "",
+          "category": "myLidl Deals",
+          "link": "https://www.lidl.com/products/7010353",
+          "image": "https://production-endpoint.azureedge.net/images/6OS34E1J75FJAC1GF0QJ0C0/f21928d9-7f6d-41ba-ac62-93760e22c83c/682839_500x500_500x500.tif.jpg"
+        }
+      ],
+      "rangeLabel": "Current myLidl deals"
+    },
+    {
+      "id": "target",
+      "name": "Target",
+      "theme": "#cc0000",
+      "logo": "/logos/target.svg",
+      "sourceUrl": "https://www.target.com/c/grocery-deals/-/N-k4uyq",
+      "sourceLabel": "Grocery Deals",
+      "fetchedAt": "2026-03-07T17:37:44.087Z",
+      "status": "ok",
+      "deals": [
+        {
+          "id": "target-almonds-good-gather-5",
+          "title": "Almonds - Good & Gather™",
+          "price": "$1.59 - $16.99",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Buy 1, get 1 25% off select Good & Gather™ nuts",
+          "expires": "",
+          "category": "Target Grocery Deals",
+          "link": "https://www.target.com/p/almonds-good-gather/-/A-95238819",
+          "image": "https://target.scene7.com/is/image/Target/GUEST_3dfffe27-c4cd-4b23-a09d-6a868dba95e0?wid=1900&qlt=80"
+        },
+        {
+          "id": "target-boulder-canyon-avocado-oil-kettle-cooked-sea-salt-potato-chips-5-25oz-23",
+          "title": "Boulder Canyon Avocado Oil Kettle Cooked Sea Salt Potato Chips - 5.25oz",
+          "price": "$4.69",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Buy 2 for $8 select Boulder Canyon chips",
+          "expires": "",
+          "category": "Target Grocery Deals",
+          "link": "https://www.target.com/p/boulder-kettle-cooked-avocado-oil-canyon-cut-sea-salt-potato-chips-5-25oz/-/A-16600402",
+          "image": "https://target.scene7.com/is/image/Target/GUEST_57c9e030-12b7-4bf8-a034-92a940da192f?wid=1900&qlt=80"
+        },
+        {
+          "id": "target-cheetos-crunchy-cheese-flavored-snacks-8-5oz-16",
+          "title": "Cheetos Crunchy Cheese Flavored Snacks - 8.5oz",
+          "price": "$4.79",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Buy 1, get 1 50% off select chips & puffed snacks",
+          "expires": "",
+          "category": "Target Grocery Deals",
+          "link": "https://www.target.com/p/cheetos-crunchy-cheese-flavored-snacks-8-5oz/-/A-12992571",
+          "image": "https://target.scene7.com/is/image/Target/GUEST_de99e464-3a00-4f3a-9bd0-9b284ce9ceaa?wid=1900&qlt=80"
+        },
+        {
+          "id": "target-cheetos-crunchy-flamin-hot-8-5oz-8",
+          "title": "Cheetos Crunchy Flamin Hot - 8.5oz",
+          "price": "$4.79",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Buy 1, get 1 50% off select chips & puffed snacks",
+          "expires": "",
+          "category": "Target Grocery Deals",
+          "link": "https://www.target.com/p/cheetos-crunchy-flamin-hot-8-5oz/-/A-12992238",
+          "image": "https://target.scene7.com/is/image/Target/GUEST_311c1828-5acd-46d3-82cd-a979f95f5607?wid=1900&qlt=80"
+        },
+        {
+          "id": "target-cheetos-crunchy-flamin-hot-lim-n-cheese-flavored-snacks-8-5oz-21",
+          "title": "Cheetos Crunchy Flamin' Hot Limón Cheese Flavored Snacks - 8.5oz",
+          "price": "$4.79",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Buy 1, get 1 50% off select chips & puffed snacks",
+          "expires": "",
+          "category": "Target Grocery Deals",
+          "link": "https://www.target.com/p/cheetos-crunchy-flamin-hot-lim-243-n-cheese-flavored-snacks-8-5oz/-/A-14930856",
+          "image": "https://target.scene7.com/is/image/Target/GUEST_db2e7e2c-2761-45c1-8703-4c7213ba9d19?wid=1900&qlt=80"
+        },
+        {
+          "id": "target-cheetos-puffs-cheese-flavored-snacks-8oz-19",
+          "title": "Cheetos Puffs Cheese Flavored Snacks - 8oz",
+          "price": "$4.79",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Buy 1, get 1 50% off select chips & puffed snacks",
+          "expires": "",
+          "category": "Target Grocery Deals",
+          "link": "https://www.target.com/p/cheetos-jumbo-puffs-8oz/-/A-12992232",
+          "image": "https://target.scene7.com/is/image/Target/GUEST_f38e0e8a-44c8-4917-94b5-0ac7ecc07177?wid=1900&qlt=80"
+        },
+        {
+          "id": "target-cheez-it-gluten-free-snack-crackers-9oz-13",
+          "title": "Cheez-It Gluten Free Snack Crackers - 9oz",
+          "price": "$3.99",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Buy 2 for $7 select crackers & snack mix",
+          "expires": "",
+          "category": "Target Grocery Deals",
+          "link": "https://www.target.com/p/cheez-it-gluten-free-snack-crackers-9oz/-/A-94877804",
+          "image": "https://target.scene7.com/is/image/Target/GUEST_34ae9560-628a-4b4e-a449-2fd81421f39f?wid=1900&qlt=80"
+        },
+        {
+          "id": "target-cheez-it-original-baked-snack-crackers-12-4oz-6",
+          "title": "Cheez-It Original Baked Snack Crackers - 12.4oz",
+          "price": "$3.99",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Buy 2 for $7 select crackers & snack mix",
+          "expires": "",
+          "category": "Target Grocery Deals",
+          "link": "https://www.target.com/p/cheez-it-original-baked-snack-crackers-12-4oz/-/A-13009781",
+          "image": "https://target.scene7.com/is/image/Target/GUEST_0fa1246c-2c65-4774-8b74-99050228898e?wid=1900&qlt=80"
+        }
+      ],
+      "rangeLabel": "Current grocery product deals"
+    }
+  ]
+}
