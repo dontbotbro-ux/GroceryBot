@@ -12,11 +12,21 @@ import {
 
 const port = Number(process.env.GROBOTS_NOTIFIER_PORT || 8787)
 
-function sendJson(response, statusCode, payload) {
-  response.writeHead(statusCode, {
-    'Access-Control-Allow-Origin': '*',
+function buildCorsHeaders(request) {
+  const origin = request.headers.origin ?? '*'
+
+  return {
+    'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Headers': 'Content-Type',
     'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+    'Access-Control-Allow-Private-Network': 'true',
+    Vary: 'Origin, Access-Control-Request-Private-Network',
+  }
+}
+
+function sendJson(request, response, statusCode, payload) {
+  response.writeHead(statusCode, {
+    ...buildCorsHeaders(request),
     'Content-Type': 'application/json; charset=utf-8',
   })
   response.end(`${JSON.stringify(payload, null, 2)}\n`)
@@ -39,15 +49,13 @@ async function readBody(request) {
 
 const server = http.createServer(async (request, response) => {
   if (!request.url) {
-    sendJson(response, 400, { error: 'Missing request URL.' })
+    sendJson(request, response, 400, { error: 'Missing request URL.' })
     return
   }
 
   if (request.method === 'OPTIONS') {
     response.writeHead(204, {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Headers': 'Content-Type',
-      'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+      ...buildCorsHeaders(request),
     })
     response.end()
     return
@@ -58,43 +66,43 @@ const server = http.createServer(async (request, response) => {
   try {
     if (request.method === 'GET' && url.pathname === '/api/settings') {
       const settings = await readSettings()
-      sendJson(response, 200, buildStatusPayload(settings))
+      sendJson(request, response, 200, buildStatusPayload(settings))
       return
     }
 
     if (request.method === 'POST' && url.pathname === '/api/settings') {
       const body = await readBody(request)
       const payload = await saveSettings(body)
-      sendJson(response, 200, payload)
+      sendJson(request, response, 200, payload)
       return
     }
 
     if (request.method === 'POST' && url.pathname === '/api/watchlist') {
       const body = await readBody(request)
       const payload = await saveWatchlist(body.watchlistIds)
-      sendJson(response, 200, payload)
+      sendJson(request, response, 200, payload)
       return
     }
 
     if (request.method === 'POST' && url.pathname === '/api/preview') {
       const body = await readBody(request)
       const payload = await previewSummary(body)
-      sendJson(response, 200, payload)
+      sendJson(request, response, 200, payload)
       return
     }
 
     if (request.method === 'POST' && url.pathname === '/api/send-now') {
       const body = await readBody(request)
       const payload = await runSummaryJob(body)
-      sendJson(response, 200, payload)
+      sendJson(request, response, 200, payload)
       return
     }
 
-    sendJson(response, 404, { error: 'Route not found.' })
+    sendJson(request, response, 404, { error: 'Route not found.' })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown notifier service error.'
     await markLastError(message)
-    sendJson(response, 500, { error: message })
+    sendJson(request, response, 500, { error: message })
   }
 })
 

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-07T17:37:44.087Z",
+  "generatedAt": "2026-03-07T18:20:55.580Z",
   "stores": [
     {
       "id": "wegmans",
@@ -8,7 +8,7 @@
       "logo": "/logos/wegmans.svg",
       "sourceUrl": "https://www.wegmans.com/shop/featured/Hot_Zone_Prices",
       "sourceLabel": "Hot Zone Prices",
-      "fetchedAt": "2026-03-07T17:37:44.087Z",
+      "fetchedAt": "2026-03-07T18:20:55.580Z",
       "status": "ok",
       "deals": [
         {
@@ -109,7 +109,7 @@
       "logo": "/logos/walmart.svg",
       "sourceUrl": "https://www.walmart.com/c/kp/groceries-deals",
       "sourceLabel": "Groceries Deals",
-      "fetchedAt": "2026-03-07T17:37:44.087Z",
+      "fetchedAt": "2026-03-07T18:20:55.580Z",
       "status": "ok",
       "deals": [
         {
@@ -136,19 +136,7 @@
           "image": "https://i5.walmartimages.com/seo/Gorton-s-Crunchy-Breaded-Fish-100-Whole-Fish-Fillets-Not-Minced-Wild-Caught-Alaskan-Pollock-Crunchy-Panko-Breadcrumbs-Frozen-10-Count-19-Ounce-Reseal_e8597f30-1a6d-4fcd-a72e-04920659ddb5.1a8d7758b4dd75da5fecb86e12647a93.jpeg?odnHeight=576&odnWidth=576&odnBg=FFFFFF"
         },
         {
-          "id": "walmart-rice-a-roni-long-grain-wild-rice-mix-packaged-meal-4-3-oz-shelf-stable-box-8",
-          "title": "Rice-A-Roni Long Grain & Wild Rice Mix Packaged Meal, 4.3 oz Shelf-Stable Box",
-          "price": "$1.33",
-          "previousPrice": "$1.48",
-          "savings": "Save $0.15",
-          "detail": "",
-          "expires": "",
-          "category": "Rollback",
-          "link": "https://www.walmart.com/ip/Rice-A-Roni-Long-Grain-Wild-Rice-Mix-Packaged-Meal-4-3-oz-Shelf-Stable-Box/13281203?classType=VARIANT&athbdg=L1300",
-          "image": "https://i5.walmartimages.com/seo/Rice-A-Roni-Long-Grain-Wild-Rice-Mix-Packaged-Meal-4-3-oz-Shelf-Stable-Box_5c06ae98-b4a5-494d-b379-340b744a9641.c8919dd11f3086bd7cefaab639db6d24.jpeg?odnHeight=576&odnWidth=576&odnBg=FFFFFF"
-        },
-        {
-          "id": "walmart-cap-n-crunch-sweetened-corn-oat-cereal-40-oz-jumbo-bag-2",
+          "id": "walmart-cap-n-crunch-sweetened-corn-oat-cereal-40-oz-jumbo-bag-4",
           "title": "Cap'n Crunch Sweetened Corn & Oat Cereal, 40 oz Jumbo Bag",
           "price": "$2.97",
           "previousPrice": "",
@@ -183,6 +171,18 @@
           "image": "https://i5.walmartimages.com/seo/Fresh-Cucumber-Each_5985ccc8-109e-411d-aca7-556ab217e1da.e3770028b0d00b3fa4e6a40c4e630ef9.jpeg?odnHeight=576&odnWidth=576&odnBg=FFFFFF"
         },
         {
+          "id": "walmart-fresh-roma-tomato-each-9",
+          "title": "Fresh Roma Tomato, Each",
+          "price": "$0.23",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "",
+          "expires": "",
+          "category": "Groceries deal",
+          "link": "https://www.walmart.com/ip/Fresh-Roma-Tomato-Each/44390944?classType=REGULAR&athbdg=L1600",
+          "image": "https://i5.walmartimages.com/seo/Fresh-Roma-Tomato-Each_ecef8a3e-ab96-445e-a16a-d639b40eb5fb.93fcc627f542f02488e5ee9d8e26f152.jpeg?odnHeight=576&odnWidth=576&odnBg=FFFFFF"
+        },
+        {
           "id": "walmart-good-thins-sea-salt-corn-snacks-gluten-free-crackers-snack-crackers-3-5-oz-1",
           "title": "GOOD THINS Sea Salt Corn Snacks Gluten Free Crackers, Snack Crackers, 3.5 oz",
           "price": "$3.77",
@@ -194,7 +194,7 @@
           "image": "https://i5.walmartimages.com/seo/Good-Thins-Sea-Salt-Corn-Snacks-Gluten-Free-Crackers-3-5-oz_2c250665-c02a-4d78-a003-da50b1bc4a31.6a87d8ccd1236fbd6c7754a9a234ceb8.jpeg?odnHeight=576&odnWidth=576&odnBg=FFFFFF"
         },
         {
-          "id": "walmart-great-value-large-white-eggs-18-count-9",
+          "id": "walmart-great-value-large-white-eggs-18-count-8",
           "title": "Great Value Large White Eggs, 18 Count",
           "price": "$2.47",
           "previousPrice": "",
@@ -215,7 +215,7 @@
       "logo": "/logos/aldi.svg",
       "sourceUrl": "https://www.aldi.us/weekly-specials/this-weeks-aldi-finds",
       "sourceLabel": "This Week's ALDI Finds",
-      "fetchedAt": "2026-03-07T17:37:44.087Z",
+      "fetchedAt": "2026-03-07T18:20:55.580Z",
       "status": "ok",
       "deals": [
         {
@@ -324,7 +324,7 @@
       "logo": "/logos/lidl.svg",
       "sourceUrl": "https://www.lidl.com/",
       "sourceLabel": "myLidl Deals",
-      "fetchedAt": "2026-03-07T17:37:44.087Z",
+      "fetchedAt": "2026-03-07T18:20:55.580Z",
       "status": "ok",
       "deals": [
         {
@@ -385,7 +385,7 @@
       "logo": "/logos/target.svg",
       "sourceUrl": "https://www.target.com/c/grocery-deals/-/N-k4uyq",
       "sourceLabel": "Grocery Deals",
-      "fetchedAt": "2026-03-07T17:37:44.087Z",
+      "fetchedAt": "2026-03-07T18:20:55.580Z",
       "status": "ok",
       "deals": [
         {

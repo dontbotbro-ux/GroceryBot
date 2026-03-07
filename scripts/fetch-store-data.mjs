@@ -61,6 +61,21 @@ export const stores = [
   },
 ]
 
+async function readExistingFeed() {
+  try {
+    const raw = await fs.readFile(outputFile, 'utf8')
+    const parsed = JSON.parse(raw)
+
+    if (!parsed || !Array.isArray(parsed.stores)) {
+      return null
+    }
+
+    return parsed
+  } catch {
+    return null
+  }
+}
+
 function normalizeText(value = '') {
   return value.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim()
 }
@@ -192,6 +207,16 @@ function buildStore(config, logoPath, fetchedAt, deals, extra = {}) {
     deals: normalizedDeals,
     ...extra,
   }
+}
+
+function buildFallbackWarning(currentWarning, previousStore) {
+  const base = currentWarning || 'The live scrape failed during this build.'
+
+  if (previousStore?.fetchedAt) {
+    return `${base} Showing the last successful results from ${previousStore.fetchedAt}.`
+  }
+
+  return `${base} Showing the last successful stored results instead.`
 }
 
 async function downloadLogos() {
@@ -514,6 +539,8 @@ export async function scrapeAllStores() {
   await fs.mkdir(publicDir, { recursive: true })
 
   const fetchedAt = new Date().toISOString()
+  const existingFeed = await readExistingFeed()
+  const existingStores = new Map((existingFeed?.stores ?? []).map((store) => [store.id, store]))
   const logos = await downloadLogos()
   const browser = await chromium.launch({ headless: true })
 
@@ -522,13 +549,37 @@ export async function scrapeAllStores() {
 
     for (const store of stores) {
       const result = await scrapeStore(store, browser, logos[store.id] ?? store.logoUrl, fetchedAt)
-      results.push(result)
-      console.log(`[scrape] ${store.name}: ${result.deals.length} deals`)
+      const previousStore = existingStores.get(store.id)
+      const shouldUseFallback = result.deals.length === 0 && previousStore?.deals?.length > 0
+      const finalStore = shouldUseFallback
+        ? {
+            ...previousStore,
+            logo: logos[store.id] ?? previousStore.logo,
+            sourceUrl: store.sourceUrl,
+            sourceLabel: store.sourceLabel,
+            theme: store.theme,
+            warning: buildFallbackWarning(result.warning, previousStore),
+          }
+        : result
+
+      results.push(finalStore)
+
+      if (shouldUseFallback) {
+        console.log(`[scrape] ${store.name}: using ${previousStore.deals.length} cached deals`)
+      } else {
+        console.log(`[scrape] ${store.name}: ${result.deals.length} deals`)
+      }
     }
 
     const totalDeals = results.reduce((sum, store) => sum + store.deals.length, 0)
 
     if (totalDeals === 0) {
+      if (existingFeed?.stores?.length) {
+        await fs.writeFile(outputFile, `${JSON.stringify(existingFeed, null, 2)}\n`)
+        console.warn('[scrape] all live scrapes failed; preserved the existing stored feed')
+        return existingFeed
+      }
+
       throw new Error('No deals were scraped from the configured stores.')
     }
 

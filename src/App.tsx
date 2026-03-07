@@ -124,12 +124,19 @@ function formatTimestamp(value: string): string {
   }).format(date)
 }
 
-function matchesSearch(store: StoreData, deal: Deal, query: string): boolean {
-  if (!query) {
-    return true
+function parsePriceValue(value: string): number | null {
+  const match = value.replace(/,/g, '').match(/(\d+(?:\.\d+)?)/)
+
+  if (!match) {
+    return null
   }
 
-  const haystack = [
+  const parsed = Number(match[1])
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function buildSearchHaystack(store: StoreData, deal: Deal): string {
+  return [
     store.name,
     deal.title,
     deal.price,
@@ -142,8 +149,14 @@ function matchesSearch(store: StoreData, deal: Deal, query: string): boolean {
     .filter(Boolean)
     .join(' ')
     .toLowerCase()
+}
 
-  return haystack.includes(query)
+function matchesSearch(store: StoreData, deal: Deal, query: string): boolean {
+  if (!query) {
+    return true
+  }
+
+  return buildSearchHaystack(store, deal).includes(query)
 }
 
 function getTileImage(deal: Deal, store: StoreData) {
@@ -153,14 +166,24 @@ function getTileImage(deal: Deal, store: StoreData) {
   }
 }
 
+async function fetchNotifierSettings() {
+  return apiRequest<NotifierResponse>('/settings')
+}
+
 async function apiRequest<T>(pathname: string, options?: RequestInit): Promise<T> {
-  const response = await fetch(`${NOTIFIER_API}${pathname}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options?.headers ?? {}),
-    },
-    ...options,
-  })
+  let response: Response
+
+  try {
+    response = await fetch(`${NOTIFIER_API}${pathname}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(options?.headers ?? {}),
+      },
+      ...options,
+    })
+  } catch {
+    throw new Error('The local notifier service is unreachable. Start `npm run notifier:service` on the Mac that owns Messages.')
+  }
 
   const payload = (await response.json()) as T & { error?: string }
 
@@ -176,6 +199,7 @@ export default function App() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
+  const [bestPriceQuery, setBestPriceQuery] = useState('')
   const [activeStore, setActiveStore] = useState('all')
   const [watchOnly, setWatchOnly] = useState(false)
   const [watchlist, setWatchlist] = useState<string[]>(readWatchlist)
@@ -188,6 +212,8 @@ export default function App() {
   const [notifierError, setNotifierError] = useState('')
   const [notifierSummary, setNotifierSummary] = useState('')
   const [scheduleDescription, setScheduleDescription] = useState('Disabled')
+  const isRemoteOrigin =
+    typeof window !== 'undefined' && !['localhost', '127.0.0.1'].includes(window.location.hostname)
 
   useEffect(() => {
     let cancelled = false
@@ -235,7 +261,7 @@ export default function App() {
 
     async function loadNotifier() {
       try {
-        const payload = await apiRequest<NotifierResponse>('/settings')
+        const payload = await fetchNotifierSettings()
 
         if (!cancelled) {
           setNotifierSettings(payload.settings)
@@ -298,6 +324,11 @@ export default function App() {
   }, [notifierOnline, watchlist])
 
   const normalizedQuery = search.trim().toLowerCase()
+  const bestPriceTokens = bestPriceQuery
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean)
 
   const filteredStores = stores
     .filter((store) => activeStore === 'all' || store.id === activeStore)
@@ -325,6 +356,48 @@ export default function App() {
   )
 
   const totalDeals = stores.reduce((sum, store) => sum + store.deals.length, 0)
+  const bestPriceMatches = stores
+    .flatMap((store) =>
+      store.deals
+        .map((deal) => {
+          const numericPrice = parsePriceValue(deal.price)
+
+          if (numericPrice === null) {
+            return null
+          }
+
+          const haystack = buildSearchHaystack(store, deal)
+          const matches =
+            bestPriceTokens.length > 0 && bestPriceTokens.every((token) => haystack.includes(token))
+
+          if (!matches) {
+            return null
+          }
+
+          return {
+            store,
+            deal,
+            numericPrice,
+          }
+        })
+        .filter(
+          (
+            result,
+          ): result is {
+            store: StoreData
+            deal: Deal
+            numericPrice: number
+          } => result !== null,
+        ),
+    )
+    .sort(
+      (left, right) =>
+        left.numericPrice - right.numericPrice ||
+        left.deal.title.localeCompare(right.deal.title) ||
+        left.store.name.localeCompare(right.store.name),
+    )
+  const bestPriceWinner = bestPriceMatches[0] ?? null
+  const bestPriceShortlist = bestPriceMatches.slice(0, 6)
 
   function toggleWatch(id: string) {
     setWatchlist((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]))
@@ -355,7 +428,31 @@ export default function App() {
     }))
   }
 
+  async function retryNotifierConnection() {
+    try {
+      setNotifierLoading(true)
+      setNotifierError('')
+      const payload = await fetchNotifierSettings()
+      setNotifierSettings(payload.settings)
+      setScheduleDescription(payload.scheduleDescription)
+      setNotifierOnline(true)
+      setNotifierMessage('Local notifier connected.')
+    } catch (connectionError) {
+      setNotifierOnline(false)
+      setNotifierError(
+        connectionError instanceof Error ? connectionError.message : 'Unable to reach the local notifier service.',
+      )
+    } finally {
+      setNotifierLoading(false)
+    }
+  }
+
   async function saveNotifierSettings() {
+    if (!notifierOnline) {
+      setNotifierError('The iMessage notifier is offline. Start `npm run notifier:service` on your Mac to save or schedule summaries.')
+      return
+    }
+
     try {
       setNotifierBusy(true)
       setNotifierError('')
@@ -380,6 +477,11 @@ export default function App() {
   }
 
   async function previewNotifierSummary() {
+    if (!notifierOnline) {
+      setNotifierError('The iMessage notifier is offline. Start `npm run notifier:service` on your Mac to preview summaries.')
+      return
+    }
+
     try {
       setNotifierBusy(true)
       setNotifierError('')
@@ -404,6 +506,11 @@ export default function App() {
   }
 
   async function sendNotifierNow() {
+    if (!notifierOnline) {
+      setNotifierError('The iMessage notifier is offline. Start `npm run notifier:service` on your Mac before sending a summary.')
+      return
+    }
+
     try {
       setNotifierBusy(true)
       setNotifierError('')
@@ -482,6 +589,106 @@ export default function App() {
           </div>
         </section>
 
+        <section className="best-price-shell">
+          <div className="section-heading">
+            <div>
+              <p className="section-kicker">Cross-store lookup</p>
+              <h2>Today&apos;s best price</h2>
+            </div>
+            <p>
+              Search the current scraped deals across Wegmans, Walmart, Aldi, Lidl, and Target to find the
+              lowest listed price.
+            </p>
+          </div>
+
+          <label className="search-panel best-price-search">
+            <span>Item search</span>
+            <input
+              type="search"
+              value={bestPriceQuery}
+              onChange={(event) => setBestPriceQuery(event.target.value)}
+              placeholder="Milk, bananas, eggs, salmon, cereal..."
+            />
+          </label>
+
+          {bestPriceTokens.length === 0 ? (
+            <div className="empty-state compact-state">
+              Search for an item to compare today&apos;s lowest matching price across all stores.
+            </div>
+          ) : null}
+
+          {bestPriceTokens.length > 0 && !bestPriceWinner ? (
+            <div className="empty-state compact-state">No current deal matches that search.</div>
+          ) : null}
+
+          {bestPriceWinner ? (
+            <div className="best-price-layout">
+              <article className="best-price-card">
+                <div className="best-price-card-top">
+                  <div className="store-heading">
+                    <img
+                      src={getTileImage(bestPriceWinner.deal, bestPriceWinner.store).src}
+                      alt={getTileImage(bestPriceWinner.deal, bestPriceWinner.store).alt}
+                      className="deal-image best-price-image"
+                    />
+                    <div>
+                      <p className="section-kicker">Lowest current match</p>
+                      <h2>{bestPriceWinner.deal.title}</h2>
+                    </div>
+                  </div>
+                  <p className="best-price-value">{bestPriceWinner.deal.price}</p>
+                </div>
+
+                <div className="best-price-meta">
+                  <span className="deal-tag">{bestPriceWinner.store.name}</span>
+                  {bestPriceWinner.deal.category ? (
+                    <span className="deal-tag deal-tag-warm">{bestPriceWinner.deal.category}</span>
+                  ) : null}
+                </div>
+
+                {bestPriceWinner.deal.detail ? (
+                  <p className="deal-detail best-price-detail">{bestPriceWinner.deal.detail}</p>
+                ) : null}
+
+                <div className="deal-actions">
+                  {bestPriceWinner.deal.link ? (
+                    <a href={bestPriceWinner.deal.link} target="_blank" rel="noreferrer" className="deal-link">
+                      Open item
+                    </a>
+                  ) : null}
+                  <button
+                    type="button"
+                    className={`track-btn ${watchlist.includes(bestPriceWinner.deal.id) ? 'is-tracked' : ''}`}
+                    onClick={() => toggleWatch(bestPriceWinner.deal.id)}
+                  >
+                    {watchlist.includes(bestPriceWinner.deal.id) ? 'Tracked' : 'Track'}
+                  </button>
+                </div>
+              </article>
+
+              <div className="best-price-results">
+                {bestPriceShortlist.map(({ store, deal }, index) => (
+                  <article key={deal.id} className="best-price-row">
+                    <div className="best-price-rank">{index + 1}</div>
+                    <img src={store.logo} alt={`${store.name} logo`} className="deal-logo" />
+                    <div className="best-price-copy">
+                      <strong>{deal.title}</strong>
+                      <p>
+                        {store.name}
+                        {deal.detail ? ` • ${deal.detail}` : ''}
+                      </p>
+                    </div>
+                    <div className="best-price-price">
+                      <strong>{deal.price}</strong>
+                      <span>{deal.previousPrice ? `Was ${deal.previousPrice}` : 'Current listed price'}</span>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </section>
+
         <section className="notifier-shell">
           <div className="section-heading">
             <div>
@@ -503,8 +710,9 @@ export default function App() {
 
           {!notifierOnline ? (
             <p className="warning-banner">
-              Start `npm run notifier:service` or `npm run dev:full` to enable schedule saving, previews, and
-              iMessage delivery.
+              {isRemoteOrigin
+                ? 'This deployed site cannot send iMessages by itself. Start `npm run notifier:service` on the Mac that owns Messages, then refresh this page.'
+                : 'Start `npm run notifier:service` or `npm run dev:full` to enable schedule saving, previews, and iMessage delivery.'}
             </p>
           ) : null}
 
@@ -604,13 +812,36 @@ export default function App() {
           </div>
 
           <div className="notifier-actions">
-            <button type="button" className="toggle-btn" onClick={() => void saveNotifierSettings()} disabled={notifierBusy}>
+            <button
+              type="button"
+              className="toggle-btn"
+              onClick={() => void retryNotifierConnection()}
+              disabled={notifierBusy || notifierLoading}
+            >
+              {notifierLoading ? 'Checking...' : 'Retry connection'}
+            </button>
+            <button
+              type="button"
+              className="toggle-btn"
+              onClick={() => void saveNotifierSettings()}
+              disabled={notifierBusy || !notifierOnline}
+            >
               Save schedule
             </button>
-            <button type="button" className="toggle-btn" onClick={() => void previewNotifierSummary()} disabled={notifierBusy}>
+            <button
+              type="button"
+              className="toggle-btn"
+              onClick={() => void previewNotifierSummary()}
+              disabled={notifierBusy || !notifierOnline}
+            >
               Preview summary
             </button>
-            <button type="button" className="toggle-btn is-active" onClick={() => void sendNotifierNow()} disabled={notifierBusy}>
+            <button
+              type="button"
+              className="toggle-btn is-active"
+              onClick={() => void sendNotifierNow()}
+              disabled={notifierBusy || !notifierOnline}
+            >
               Refresh and send now
             </button>
           </div>
