@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-08T00:59:23.618Z",
+  "generatedAt": "2026-03-08T01:03:41.824Z",
   "stores": [
     {
       "id": "wegmans",
@@ -494,21 +494,9 @@
       "logo": "/logos/kroger.svg",
       "sourceUrl": "https://www.kroger.com/pr/top-deals",
       "sourceLabel": "Top Deals",
-      "fetchedAt": "2026-03-08T00:59:23.618Z",
+      "fetchedAt": "2026-03-08T01:03:41.824Z",
       "status": "partial",
       "deals": [
-        {
-          "id": "kroger-0003338320027",
-          "title": "Fresh Strawberries - 1 LB Clamshell",
-          "price": "$1.99",
-          "previousPrice": "$3.99",
-          "savings": "Save $2.00",
-          "detail": "Fresh Fruit • UPC: 0003338320027",
-          "expires": "2026-03-11T03:59:59.999Z",
-          "category": "Fresh Fruit",
-          "link": "https://www.kroger.com/p/fresh-strawberries-1-lb-clamshell/0003338320027",
-          "image": "https://www.kroger.com/product/images/large/front/0003338320027"
-        },
         {
           "id": "kroger-0001111063061",
           "title": "Kroger Chef Salad Kit",
@@ -520,54 +508,6 @@
           "category": "Deli",
           "link": "https://www.kroger.com/p/kroger-chef-salad-kit/0001111063061",
           "image": "https://www.kroger.com/product/images/large/front/0001111063061"
-        },
-        {
-          "id": "kroger-0000000004225",
-          "title": "Fresh Large Ripe Avocado",
-          "price": "4 For $5.00",
-          "previousPrice": "$2.79",
-          "savings": "Save $1.54",
-          "detail": "1 each",
-          "expires": "2026-03-11T03:59:59.999Z",
-          "category": "Produce",
-          "link": "https://www.kroger.com/p/fresh-large-ripe-avocado/0000000004225",
-          "image": "https://www.kroger.com/product/images/large/front/0000000004225"
-        },
-        {
-          "id": "kroger-0004470002268",
-          "title": "Oscar Mayer Original Center Cut Bacon",
-          "price": "Buy 1, Get 1 Free",
-          "previousPrice": "$8.49",
-          "savings": "Save $0.00",
-          "detail": "Oscar Mayer • 12 oz",
-          "expires": "2026-03-11T03:59:59.999Z",
-          "category": "Meat & Seafood",
-          "link": "https://www.kroger.com/p/oscar-mayer-original-center-cut-bacon/0004470002268",
-          "image": "https://www.kroger.com/product/images/large/front/0004470002268"
-        },
-        {
-          "id": "kroger-0004470001990",
-          "title": "Oscar Mayer 12-Hour Real Wood Smoked Thick Cut Bacon",
-          "price": "Buy 1, Get 1 Free",
-          "previousPrice": "$8.49",
-          "savings": "Save $0.00",
-          "detail": "Oscar Mayer • 16 oz",
-          "expires": "2026-03-11T03:59:59.999Z",
-          "category": "Meat & Seafood",
-          "link": "https://www.kroger.com/p/oscar-mayer-12-hour-real-wood-smoked-thick-cut-bacon/0004470001990",
-          "image": "https://www.kroger.com/product/images/large/front/0004470001990"
-        },
-        {
-          "id": "kroger-0007590000526",
-          "title": "Bob Evans Original Mashed Potatoes",
-          "price": "$3.99",
-          "previousPrice": "$4.49",
-          "savings": "Save $0.50",
-          "detail": "Bob Evans • 24 oz",
-          "expires": "2026-03-25T03:59:59.999Z",
-          "category": "Deli",
-          "link": "https://www.kroger.com/p/bob-evans-original-mashed-potatoes/0007590000526",
-          "image": "https://www.kroger.com/product/images/large/front/0007590000526"
         },
         {
           "id": "kroger-0001111022298",
@@ -582,6 +522,18 @@
           "image": "https://www.kroger.com/product/images/large/front/0001111022298"
         },
         {
+          "id": "kroger-0003338320027",
+          "title": "Fresh Strawberries – 1 LB Clamshell",
+          "price": "$1.99",
+          "previousPrice": "$3.99",
+          "savings": "Save $2.00",
+          "detail": "1 lb",
+          "expires": "2026-03-11T03:59:59.999Z",
+          "category": "Produce",
+          "link": "https://www.kroger.com/p/fresh-strawberries-1-lb-clamshell/0003338320027",
+          "image": "https://www.kroger.com/product/images/large/front/0003338320027"
+        },
+        {
           "id": "kroger-0020324300000",
           "title": "Kroger Natural Pork Baby Back Ribs",
           "price": "$13.25",
@@ -592,6 +544,30 @@
           "category": "Meat & Seafood",
           "link": "https://www.kroger.com/p/kroger-natural-pork-baby-back-ribs/0020324300000",
           "image": "https://www.kroger.com/product/images/large/front/0020324300000"
+        },
+        {
+          "id": "kroger-0004470002268",
+          "title": "Oscar Mayer Original Center Cut Bacon",
+          "price": "Buy 1, Get 1 Free",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Oscar Mayer • 12 OZ",
+          "expires": "2026-03-11T03:59:59.999Z",
+          "category": "Meat & Seafood",
+          "link": "https://www.kroger.com/p/oscar-mayer-original-center-cut-bacon/0004470002268",
+          "image": "https://www.kroger.com/product/images/large/front/0004470002268"
+        },
+        {
+          "id": "kroger-0000000004430",
+          "title": "Fresh Ripe Whole Pineapple",
+          "price": "$2.99",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "1 ct",
+          "expires": "",
+          "category": "Produce",
+          "link": "https://www.kroger.com/p/fresh-ripe-whole-pineapple/0000000004430",
+          "image": "https://www.kroger.com/product/images/large/front/0000000004430"
         },
         {
           "id": "kroger-0001111091687",
@@ -606,16 +582,208 @@
           "image": "https://www.kroger.com/product/images/large/front/0001111091687"
         },
         {
-          "id": "kroger-0000000004430",
-          "title": "Fresh Ripe Whole Pineapple",
+          "id": "kroger-0004470001990",
+          "title": "Oscar Mayer 12-Hour Real Wood Smoked Thick Cut Bacon",
+          "price": "Buy 1, Get 1 Free",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Oscar Mayer • 16 OZ",
+          "expires": "2026-03-11T03:59:59.999Z",
+          "category": "Meat & Seafood",
+          "link": "https://www.kroger.com/p/oscar-mayer-12-hour-real-wood-smoked-thick-cut-bacon/0004470001990",
+          "image": "https://www.kroger.com/product/images/large/front/0004470001990"
+        },
+        {
+          "id": "kroger-0007590000526",
+          "title": "Bob Evans Original Mashed Potatoes",
+          "price": "$3.99",
+          "previousPrice": "$4.49",
+          "savings": "Save $0.50",
+          "detail": "Bob Evans • 24 oz",
+          "expires": "2026-03-25T03:59:59.999Z",
+          "category": "Meat & Seafood",
+          "link": "https://www.kroger.com/p/bob-evans-original-mashed-potatoes/0007590000526",
+          "image": "https://www.kroger.com/product/images/large/front/0007590000526"
+        },
+        {
+          "id": "kroger-0001111079541",
+          "title": "Private Selection Petite Red Gourmet Potatoes",
+          "price": "$3.99",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Private Selection • 1.5 lb",
+          "expires": "",
+          "category": "Produce",
+          "link": "https://www.kroger.com/p/private-selection-petite-red-gourmet-potatoes/0001111079541",
+          "image": "https://www.kroger.com/product/images/large/front/0001111079541"
+        },
+        {
+          "id": "kroger-0000000003283",
+          "title": "Large Honeycrisp Apple – Each",
+          "price": "$1.25",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Rainier Fruit • $2.49/lb",
+          "expires": "",
+          "category": "Produce",
+          "link": "https://www.kroger.com/p/large-honeycrisp-apple-each/0000000003283",
+          "image": "https://www.kroger.com/product/images/large/front/0000000003283"
+        },
+        {
+          "id": "kroger-0003338324000",
+          "title": "Fresh Blackberries - 6 OZ Clamshell",
           "price": "$2.99",
           "previousPrice": "",
           "savings": "",
-          "detail": "1 ct",
+          "detail": "Driscoll's • 6 oz",
           "expires": "",
           "category": "Produce",
-          "link": "https://www.kroger.com/p/fresh-ripe-whole-pineapple/0000000004430",
-          "image": "https://www.kroger.com/product/images/large/front/0000000004430"
+          "link": "https://www.kroger.com/p/fresh-blackberries-6-oz-clamshell/0003338324000",
+          "image": "https://www.kroger.com/product/images/large/front/0003338324000"
+        },
+        {
+          "id": "kroger-0001111079542",
+          "title": "Private Selection Petite Gold Gourmet Potatoes",
+          "price": "$3.99",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Private Selection • 1.5 lb",
+          "expires": "",
+          "category": "Produce",
+          "link": "https://www.kroger.com/p/private-selection-petite-gold-gourmet-potatoes/0001111079542",
+          "image": "https://www.kroger.com/product/images/large/front/0001111079542"
+        },
+        {
+          "id": "kroger-0001111008068",
+          "title": "Simple Truth Jumbo Raw Shrimp Peeled & Deveined Tail Off",
+          "price": "Save $1 each when you buy 5 or more",
+          "previousPrice": "$12.99",
+          "savings": "Save $2.00",
+          "detail": "Simple Truth • 16 ounces",
+          "expires": "2026-04-01T03:59:59.999Z",
+          "category": "Meat & Seafood",
+          "link": "https://www.kroger.com/p/simple-truth-jumbo-raw-shrimp-peeled-deveined-tail-off/0001111008068",
+          "image": "https://www.kroger.com/product/images/large/front/0001111008068"
+        },
+        {
+          "id": "kroger-0004470001988",
+          "title": "Oscar Mayer 12-Hour Real Wood Smoked Bacon",
+          "price": "Buy 1, Get 1 Free",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Oscar Mayer • 16 OZ",
+          "expires": "2026-03-11T03:59:59.999Z",
+          "category": "Meat & Seafood",
+          "link": "https://www.kroger.com/p/oscar-mayer-12-hour-real-wood-smoked-bacon/0004470001988",
+          "image": "https://www.kroger.com/product/images/large/front/0004470001988"
+        },
+        {
+          "id": "kroger-0007790011563",
+          "title": "Jimmy Dean Premium Pork Hot Breakfast Sausage Roll",
+          "price": "Save $1 each when you buy 5 or more",
+          "previousPrice": "$5.79",
+          "savings": "Save $0.80",
+          "detail": "Jimmy Dean • 16 OZ",
+          "expires": "2026-03-11T03:59:59.999Z",
+          "category": "Meat & Seafood",
+          "link": "https://www.kroger.com/p/jimmy-dean-premium-pork-hot-breakfast-sausage-roll/0007790011563",
+          "image": "https://www.kroger.com/product/images/large/front/0007790011563"
+        },
+        {
+          "id": "kroger-0020322450000",
+          "title": "Kroger Fresh Natural Pork Loin Boneless",
+          "price": "about $9.76 each",
+          "previousPrice": "$11.72",
+          "savings": "Save $1.96",
+          "detail": "PORK • $2.49/lb",
+          "expires": "2026-03-11T03:59:59.999Z",
+          "category": "Meat & Seafood",
+          "link": "https://www.kroger.com/p/kroger-fresh-natural-pork-loin-boneless/0020322450000",
+          "image": "https://www.kroger.com/product/images/large/front/0020322450000"
+        },
+        {
+          "id": "kroger-0000000003421",
+          "title": "Mini Seedless Whole Watermelon",
+          "price": "2 For $6.00",
+          "previousPrice": "$4.99",
+          "savings": "Save $1.99",
+          "detail": "1 ct",
+          "expires": "2026-03-11T03:59:59.999Z",
+          "category": "Produce",
+          "link": "https://www.kroger.com/p/mini-seedless-whole-watermelon/0000000003421",
+          "image": "https://www.kroger.com/product/images/large/front/0000000003421"
+        },
+        {
+          "id": "kroger-0000000004225",
+          "title": "Fresh Large Ripe Avocado",
+          "price": "4 For $5.00",
+          "previousPrice": "$2.79",
+          "savings": "Save $1.54",
+          "detail": "Avocados From Mexico • 1 each",
+          "expires": "2026-03-11T03:59:59.999Z",
+          "category": "Produce",
+          "link": "https://www.kroger.com/p/fresh-large-ripe-avocado/0000000004225",
+          "image": "https://www.kroger.com/product/images/large/front/0000000004225"
+        },
+        {
+          "id": "kroger-0007790011553",
+          "title": "Jimmy Dean Premium Pork Regular Breakfast Sausage Roll",
+          "price": "Save $1 each when you buy 5 or more",
+          "previousPrice": "$5.79",
+          "savings": "Save $0.80",
+          "detail": "Jimmy Dean • 16 OZ",
+          "expires": "2026-03-11T03:59:59.999Z",
+          "category": "Meat & Seafood",
+          "link": "https://www.kroger.com/p/jimmy-dean-premium-pork-regular-breakfast-sausage-roll/0007790011553",
+          "image": "https://www.kroger.com/product/images/large/front/0007790011553"
+        },
+        {
+          "id": "kroger-0001111063034",
+          "title": "Kroger Santa Fe Style Salad Kit",
+          "price": "3 For $11.00",
+          "previousPrice": "$3.99",
+          "savings": "Save $0.32",
+          "detail": "Kroger • 6 oz",
+          "expires": "2026-04-01T03:59:59.999Z",
+          "category": "Produce",
+          "link": "https://www.kroger.com/p/kroger-santa-fe-style-salad-kit/0001111063034",
+          "image": "https://www.kroger.com/product/images/large/front/0001111063034"
+        },
+        {
+          "id": "kroger-0001111007294",
+          "title": "Bakery Fresh Blueberry Muffins",
+          "price": "$5.00",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "Bakery Fresh • 4 ct / 15 oz",
+          "expires": "",
+          "category": "Breakfast",
+          "link": "https://www.kroger.com/p/bakery-fresh-blueberry-muffins/0001111007294",
+          "image": "https://www.kroger.com/product/images/large/front/0001111007294"
+        },
+        {
+          "id": "kroger-0001111063064",
+          "title": "Kroger Chicken Caesar Salad Kit",
+          "price": "3 For $11.00",
+          "previousPrice": "$3.99",
+          "savings": "Save $0.32",
+          "detail": "Kroger • 6 oz",
+          "expires": "2026-04-01T03:59:59.999Z",
+          "category": "Deli",
+          "link": "https://www.kroger.com/p/kroger-chicken-caesar-salad-kit/0001111063064",
+          "image": "https://www.kroger.com/product/images/large/front/0001111063064"
+        },
+        {
+          "id": "kroger-0007224013381",
+          "title": "Wonderful Halos Mandarins",
+          "price": "$2.99",
+          "previousPrice": "$4.99",
+          "savings": "Save $2.00",
+          "detail": "Halos • 3 lb",
+          "expires": "2026-03-11T03:59:59.999Z",
+          "category": "Produce",
+          "link": "https://www.kroger.com/p/wonderful-halos-mandarins/0007224013381",
+          "image": "https://www.kroger.com/product/images/large/front/0007224013381"
         }
       ],
       "rangeLabel": "Current Kroger top deals"
