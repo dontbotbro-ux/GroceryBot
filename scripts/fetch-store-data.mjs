@@ -24,6 +24,7 @@ const krogerDealSearchLinks = [
   '/search?keyword=TDFreshCuratedSavingsP2W1&query=TDFreshCuratedSavingsP2W1&searchType=mktg%20attribute&monet=curated&fulfillment=all&pzn=relevance',
   '/search?keyword=MustBuyTDSoda1&query=MustBuyTDSoda1&searchType=mktg%20attribute&monet=curated&fulfillment=all&pzn=relevance',
   '/search?keyword=TDBabySave10P1W326&query=TDBabySave10P1W326&searchType=mktg%20attribute&monet=curated&fulfillment=all&pzn=relevance',
+  '/search?keyword=WDDShopAllProduct26021&query=WDDShopAllProduct26021&searchType=mktg%20attribute&monet=curated&fulfillment=all&pzn=relevance',
 ]
 
 const krogerGroceryCategoryLinks = [
@@ -60,7 +61,121 @@ const krogerStaticFallbackItems = [
     category: 'Fresh Fruit',
     link: 'https://www.kroger.com/p/fresh-strawberries-1-lb-clamshell/0003338320027',
     image: 'https://www.kroger.com/product/images/large/front/0003338320027',
-    sourceLabel: 'Grocery',
+    sourceLabel: 'Top Deals',
+    expires: '2026-03-11T03:59:59.999Z',
+  },
+  {
+    id: '0001111063061',
+    title: 'Kroger Chef Salad Kit',
+    priceValue: 3.67,
+    price: '3 For $11.00',
+    previousPrice: '$3.99',
+    detail: 'Kroger • 6.7 oz',
+    category: 'Deli',
+    link: 'https://www.kroger.com/p/kroger-chef-salad-kit/0001111063061',
+    image: 'https://www.kroger.com/product/images/large/front/0001111063061',
+    sourceLabel: 'Top Deals',
+    expires: '2026-04-01T03:59:59.999Z',
+  },
+  {
+    id: '0000000004225',
+    title: 'Fresh Large Ripe Avocado',
+    priceValue: 1.25,
+    price: '4 For $5.00',
+    previousPrice: '$2.79',
+    detail: '1 each',
+    category: 'Produce',
+    link: 'https://www.kroger.com/p/fresh-large-ripe-avocado/0000000004225',
+    image: 'https://www.kroger.com/product/images/large/front/0000000004225',
+    sourceLabel: 'Top Deals',
+    expires: '2026-03-11T03:59:59.999Z',
+  },
+  {
+    id: '0004470002268',
+    title: 'Oscar Mayer Original Center Cut Bacon',
+    priceValue: 8.49,
+    price: 'Buy 1, Get 1 Free',
+    previousPrice: '$8.49',
+    detail: 'Oscar Mayer • 12 oz',
+    category: 'Meat & Seafood',
+    link: 'https://www.kroger.com/p/oscar-mayer-original-center-cut-bacon/0004470002268',
+    image: 'https://www.kroger.com/product/images/large/front/0004470002268',
+    sourceLabel: 'Top Deals',
+    expires: '2026-03-11T03:59:59.999Z',
+  },
+  {
+    id: '0004470001990',
+    title: 'Oscar Mayer 12-Hour Real Wood Smoked Thick Cut Bacon',
+    priceValue: 8.49,
+    price: 'Buy 1, Get 1 Free',
+    previousPrice: '$8.49',
+    detail: 'Oscar Mayer • 16 oz',
+    category: 'Meat & Seafood',
+    link: 'https://www.kroger.com/p/oscar-mayer-12-hour-real-wood-smoked-thick-cut-bacon/0004470001990',
+    image: 'https://www.kroger.com/product/images/large/front/0004470001990',
+    sourceLabel: 'Top Deals',
+    expires: '2026-03-11T03:59:59.999Z',
+  },
+  {
+    id: '0007590000526',
+    title: 'Bob Evans Original Mashed Potatoes',
+    priceValue: 3.99,
+    price: '$3.99',
+    previousPrice: '$4.49',
+    detail: 'Bob Evans • 24 oz',
+    category: 'Deli',
+    link: 'https://www.kroger.com/p/bob-evans-original-mashed-potatoes/0007590000526',
+    image: 'https://www.kroger.com/product/images/large/front/0007590000526',
+    sourceLabel: 'Top Deals',
+    expires: '2026-03-25T03:59:59.999Z',
+  },
+  {
+    id: '0001111022298',
+    title: 'Private Selection Seedless Mini Cucumbers',
+    priceValue: 3.49,
+    price: '$3.49',
+    previousPrice: '',
+    detail: 'Private Selection • 16 oz',
+    category: 'Produce',
+    link: 'https://www.kroger.com/p/private-selection-seedless-mini-cucumbers/0001111022298',
+    image: 'https://www.kroger.com/product/images/large/front/0001111022298',
+    sourceLabel: 'Top Deals',
+  },
+  {
+    id: '0020324300000',
+    title: 'Kroger Natural Pork Baby Back Ribs',
+    priceValue: 13.25,
+    price: '$13.25',
+    previousPrice: '',
+    detail: '$4.49/lb',
+    category: 'Meat & Seafood',
+    link: 'https://www.kroger.com/p/kroger-natural-pork-baby-back-ribs/0020324300000',
+    image: 'https://www.kroger.com/product/images/large/front/0020324300000',
+    sourceLabel: 'Top Deals',
+  },
+  {
+    id: '0001111091687',
+    title: 'Private Selection Campari Tomatoes',
+    priceValue: 4.29,
+    price: '$4.29',
+    previousPrice: '',
+    detail: 'Private Selection • 16 oz',
+    category: 'Produce',
+    link: 'https://www.kroger.com/p/private-selection-campari-tomatoes/0001111091687',
+    image: 'https://www.kroger.com/product/images/large/front/0001111091687',
+    sourceLabel: 'Top Deals',
+  },
+  {
+    id: '0000000004430',
+    title: 'Fresh Ripe Whole Pineapple',
+    priceValue: 2.99,
+    price: '$2.99',
+    previousPrice: '',
+    detail: '1 ct',
+    category: 'Produce',
+    link: 'https://www.kroger.com/p/fresh-ripe-whole-pineapple/0000000004430',
+    image: 'https://www.kroger.com/product/images/large/front/0000000004430',
+    sourceLabel: 'Top Deals',
   },
 ]
 
@@ -493,6 +608,86 @@ function buildKrogerProductUrl(product) {
   return `https://www.kroger.com/p/${slugify(product.description || product.title || product.upc || 'product')}/${product.upc}`
 }
 
+function parseUsdAmount(value) {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null
+  }
+
+  if (typeof value !== 'string') {
+    return null
+  }
+
+  const match = value.match(/USD\s*([0-9]+(?:\.[0-9]+)?)/i) ?? value.match(/\$([0-9]+(?:\.[0-9]+)?)/)
+
+  if (!match) {
+    return null
+  }
+
+  const parsed = Number(match[1])
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function getKrogerProductImage(images = []) {
+  return (
+    images.find((image) => image?.perspective === 'front' && image?.size === 'large')?.url ??
+    images.find((image) => image?.perspective === 'front' && image?.size === 'xlarge')?.url ??
+    images.find((image) => image?.perspective === 'front')?.url ??
+    images[0]?.url ??
+    ''
+  )
+}
+
+function buildKrogerListingProducts(state) {
+  const inlineProducts = state?.calypso?.useCases?.getProducts?.['search-grid']?.response?.data?.products ?? []
+
+  return inlineProducts
+    .map((product) => {
+      const item = product?.item ?? {}
+      const fulfillment =
+        product?.fulfillmentSummaries?.find((summary) => summary?.type === 'PICKUP') ??
+        product?.fulfillmentSummaries?.[0] ??
+        {}
+      const upc = normalizeText(item.upc ?? product?.id ?? '')
+      const title = normalizeText(item.description ?? '')
+      const salePriceValue = parseUsdAmount(fulfillment?.sale?.price) ?? parseUsdAmount(product?.price?.storePrices?.promo?.price)
+      const regularPriceValue =
+        parseUsdAmount(fulfillment?.regular?.price) ?? parseUsdAmount(product?.price?.storePrices?.regular?.price)
+      const priceValue = salePriceValue ?? regularPriceValue
+
+      if (!upc || !title || priceValue === null) {
+        return null
+      }
+
+      const promoDescription = normalizeText(
+        fulfillment?.sale?.priceString ?? product?.price?.storePrices?.promo?.defaultDescription ?? '',
+      )
+      const detail = normalizeText(
+        [item?.brand?.name ?? '', fulfillment?.sale?.pricePerUnitString ?? fulfillment?.regular?.pricePerUnitString ?? item?.customerFacingSize ?? '']
+          .filter(Boolean)
+          .join(' • '),
+      )
+
+      return {
+        upc,
+        description: title,
+        title,
+        priceValue,
+        price: promoDescription || formatDollarValue(priceValue),
+        previousPrice:
+          salePriceValue !== null && regularPriceValue !== null && regularPriceValue > salePriceValue
+            ? formatDollarValue(regularPriceValue)
+            : '',
+        detail,
+        category: normalizeText(item?.categories?.[0]?.name ?? item?.familyTree?.department?.name ?? ''),
+        link: buildKrogerProductUrl({ upc, description: title }),
+        image: getKrogerProductImage(item?.images ?? []),
+        expires:
+          fulfillment?.sale?.expirationDate?.value ?? product?.price?.storePrices?.promo?.expirationDate?.value ?? '',
+      }
+    })
+    .filter(Boolean)
+}
+
 function getKrogerPrimaryCategory($) {
   const breadcrumbs = $('nav.kds-Breadcrumb li a')
     .map((_, element) => normalizeText($(element).text()))
@@ -506,16 +701,19 @@ async function scrapeKrogerListingPage(url) {
   const html = await fetchHtml(url)
   const state = parseKrogerState(html)
   const $ = cheerio.load(html)
+  const inlineProducts = buildKrogerListingProducts(state)
 
   return {
     title:
       normalizeText($('main h1').first().text()) ||
       normalizeText($('title').first().text().replace(/\s*-\s*Kroger$/i, '')),
     products:
-      state?.search?.searchAll?.response?.products?.map((product) => ({
-        upc: product.upc ?? product.gtin13 ?? '',
-        description: normalizeText(product.description ?? ''),
-      })) ?? [],
+      inlineProducts.length > 0
+        ? inlineProducts
+        : state?.search?.searchAll?.response?.products?.map((product) => ({
+            upc: product.upc ?? product.gtin13 ?? '',
+            description: normalizeText(product.description ?? ''),
+          })) ?? [],
   }
 }
 
@@ -561,7 +759,6 @@ async function fetchKrogerProduct(product) {
 }
 
 async function collectKrogerDealSources() {
-  let fallbackToDepartments = false
   let searchLinks = krogerDealSearchLinks
 
   try {
@@ -581,11 +778,6 @@ async function collectKrogerDealSources() {
     console.warn(
       `[kroger] top deals source fallback: ${error instanceof Error ? error.message : 'Unable to load top deals page'}`,
     )
-    fallbackToDepartments = true
-  }
-
-  if (fallbackToDepartments) {
-    return []
   }
 
   return searchLinks.map((href, index) => ({
@@ -840,7 +1032,7 @@ async function scrapeKroger(logoPath, fetchedAt) {
   }
 
   const dedupedProducts = [...new Map(listingProducts.map((product) => [product.upc, product])).values()]
-  const productsToEnrich =
+  const productsToUse =
     dedupedProducts.length > 0
       ? dedupedProducts
       : krogerSeedProducts.map((product) => ({
@@ -848,6 +1040,8 @@ async function scrapeKroger(logoPath, fetchedAt) {
           sourceLabel: 'Grocery',
           category: 'Kroger Grocery',
         }))
+  const inlineProducts = productsToUse.filter((product) => product.priceValue !== undefined && product.title)
+  const productsToEnrich = productsToUse.filter((product) => product.priceValue === undefined || !product.title)
   const enriched = (
     await mapWithConcurrency(productsToEnrich, 6, async (product) => {
       try {
@@ -860,7 +1054,7 @@ async function scrapeKroger(logoPath, fetchedAt) {
       }
     })
   ).filter(Boolean)
-  const finalProducts = enriched.length > 0 ? enriched : krogerStaticFallbackItems
+  const finalProducts = inlineProducts.length + enriched.length > 0 ? [...inlineProducts, ...enriched] : krogerStaticFallbackItems
 
   return buildStore(
     config,
@@ -871,6 +1065,7 @@ async function scrapeKroger(logoPath, fetchedAt) {
       price: product.price,
       previousPrice: product.previousPrice,
       detail: product.detail,
+      expires: product.expires,
       link: product.link,
       image: product.image,
       category: product.category || 'Top Deals',
@@ -1363,7 +1558,7 @@ async function scrapeKrogerCatalog() {
   }
 
   const dedupedProducts = [...new Map(sourceItems.map((product) => [product.upc, product])).values()]
-  const productsToEnrich =
+  const productsToUse =
     dedupedProducts.length > 0
       ? dedupedProducts
       : krogerSeedProducts.map((product) => ({
@@ -1371,6 +1566,8 @@ async function scrapeKrogerCatalog() {
           sourceLabel: 'Grocery',
           category: 'Kroger Grocery',
         }))
+  const inlineProducts = productsToUse.filter((product) => product.priceValue !== undefined && product.title)
+  const productsToEnrich = productsToUse.filter((product) => product.priceValue === undefined || !product.title)
   const enriched = (
     await mapWithConcurrency(productsToEnrich, 6, async (product) => {
       try {
@@ -1386,7 +1583,7 @@ async function scrapeKrogerCatalog() {
       }
     })
   ).filter(Boolean)
-  const finalProducts = enriched.length > 0 ? enriched : krogerStaticFallbackItems
+  const finalProducts = inlineProducts.length + enriched.length > 0 ? [...inlineProducts, ...enriched] : krogerStaticFallbackItems
 
   const itemsBySource = new Map()
 
