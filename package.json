@@ -9,6 +9,7 @@
     "prebuild": "npm run scrape:stores",
     "dev": "vite",
     "dev:full": "node scripts/dev-all.mjs",
+    "build:app": "tsc -b && vite build",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "notifier:service": "node scripts/notifier-service.mjs",

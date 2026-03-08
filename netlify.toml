@@ -1,5 +1,5 @@
 [build]
-  command = "npx playwright install chromium && npm run build"
+  command = "npm run build:app"
   publish = "dist"
 
 [build.environment]
