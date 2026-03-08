@@ -32,6 +32,25 @@ type StoreFeed = {
   stores: StoreData[]
 }
 
+type BestPriceItem = {
+  id: string
+  storeId: string
+  sourceLabel: string
+  title: string
+  price: string
+  priceValue: number
+  detail?: string
+  category?: string
+  link?: string
+  image?: string
+}
+
+type BestPriceFeed = {
+  generatedAt: string
+  itemCount: number
+  items: BestPriceItem[]
+}
+
 type ScheduleType = 'daily' | 'weekly'
 type SummaryMode = 'all' | 'tracked'
 type Weekday = 'SUN' | 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT'
@@ -200,6 +219,9 @@ export default function App() {
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
   const [bestPriceQuery, setBestPriceQuery] = useState('')
+  const [bestPriceFeed, setBestPriceFeed] = useState<BestPriceFeed | null>(null)
+  const [bestPriceLoading, setBestPriceLoading] = useState(false)
+  const [bestPriceError, setBestPriceError] = useState('')
   const [activeStore, setActiveStore] = useState('all')
   const [watchOnly, setWatchOnly] = useState(false)
   const [watchlist, setWatchlist] = useState<string[]>(readWatchlist)
@@ -329,6 +351,49 @@ export default function App() {
     .toLowerCase()
     .split(/\s+/)
     .filter(Boolean)
+  const storesById = new Map(stores.map((store) => [store.id, store]))
+
+  useEffect(() => {
+    if (bestPriceTokens.length === 0 || bestPriceFeed || bestPriceLoading || bestPriceError) {
+      return
+    }
+
+    let cancelled = false
+
+    async function loadBestPriceFeed() {
+      try {
+        setBestPriceLoading(true)
+        const response = await fetch('/best-price-data.json', { cache: 'no-store' })
+
+        if (!response.ok) {
+          throw new Error(`Failed to load best-price catalog (${response.status})`)
+        }
+
+        const data = (await response.json()) as BestPriceFeed
+
+        if (!cancelled) {
+          setBestPriceFeed(data)
+          setBestPriceError('')
+        }
+      } catch (loadError) {
+        if (!cancelled) {
+          setBestPriceError(
+            loadError instanceof Error ? loadError.message : 'Unable to load the best-price catalog.',
+          )
+        }
+      } finally {
+        if (!cancelled) {
+          setBestPriceLoading(false)
+        }
+      }
+    }
+
+    void loadBestPriceFeed()
+
+    return () => {
+      cancelled = true
+    }
+  }, [bestPriceError, bestPriceFeed, bestPriceLoading, bestPriceTokens.length])
 
   const filteredStores = stores
     .filter((store) => activeStore === 'all' || store.id === activeStore)
@@ -356,48 +421,73 @@ export default function App() {
   )
 
   const totalDeals = stores.reduce((sum, store) => sum + store.deals.length, 0)
-  const bestPriceMatches = stores
-    .flatMap((store) =>
-      store.deals
-        .map((deal) => {
-          const numericPrice = parsePriceValue(deal.price)
+  const bestPriceMatches = (bestPriceFeed?.items ?? [])
+    .map((item) => {
+      const store = storesById.get(item.storeId)
 
-          if (numericPrice === null) {
-            return null
-          }
+      if (!store) {
+        return null
+      }
 
-          const haystack = buildSearchHaystack(store, deal)
-          const matches =
-            bestPriceTokens.length > 0 && bestPriceTokens.every((token) => haystack.includes(token))
+      const haystack = [
+        store.name,
+        item.title,
+        item.price,
+        item.detail,
+        item.category,
+        item.sourceLabel,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+      const matches = bestPriceTokens.length > 0 && bestPriceTokens.every((token) => haystack.includes(token))
 
-          if (!matches) {
-            return null
-          }
+      if (!matches) {
+        return null
+      }
 
-          return {
-            store,
-            deal,
-            numericPrice,
-          }
-        })
-        .filter(
-          (
-            result,
-          ): result is {
-            store: StoreData
-            deal: Deal
-            numericPrice: number
-          } => result !== null,
-        ),
+      return {
+        store,
+        item,
+        numericPrice: item.priceValue ?? parsePriceValue(item.price) ?? Number.POSITIVE_INFINITY,
+      }
+    })
+    .filter(
+      (
+        result,
+      ): result is {
+        store: StoreData
+        item: BestPriceItem
+        numericPrice: number
+      } => result !== null && Number.isFinite(result.numericPrice),
     )
     .sort(
       (left, right) =>
         left.numericPrice - right.numericPrice ||
-        left.deal.title.localeCompare(right.deal.title) ||
+        left.item.title.localeCompare(right.item.title) ||
         left.store.name.localeCompare(right.store.name),
     )
   const bestPriceWinner = bestPriceMatches[0] ?? null
   const bestPriceShortlist = bestPriceMatches.slice(0, 6)
+  const bestPriceCrossChecks = Array.from(
+    bestPriceMatches.reduce<
+      Map<
+        string,
+        {
+          store: StoreData
+          item: BestPriceItem
+          numericPrice: number
+        }
+      >
+    >((matchesByStore, match) => {
+      if (matchesByStore.has(match.store.id) || !match.item.link) {
+        return matchesByStore
+      }
+
+      matchesByStore.set(match.store.id, match)
+      return matchesByStore
+    }, new Map()).values(),
+  )
 
   function toggleWatch(id: string) {
     setWatchlist((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]))
@@ -541,15 +631,15 @@ export default function App() {
           <p className="eyebrow">Scraped from official store pages</p>
           <h1>grobots</h1>
           <p className="hero-text">
-            Weekly grocery deal intelligence for Wegmans, Walmart, Aldi, Lidl, and Target. Search the live
-            feed, compare stores, track items, and send an iMessage summary on your schedule.
+            Weekly grocery deal intelligence for Wegmans, Walmart, Aldi, Lidl, Target, and Kroger. Search
+            the live feed, compare stores, track items, and send an iMessage summary on your schedule.
           </p>
         </div>
 
         <div className="hero-stats">
           <article className="metric-card">
             <span className="metric-label">Stores tracked</span>
-            <strong>{stores.length || 5}</strong>
+            <strong>{stores.length || 6}</strong>
           </article>
           <article className="metric-card">
             <span className="metric-label">Deals scraped</span>
@@ -596,8 +686,8 @@ export default function App() {
               <h2>Today&apos;s best price</h2>
             </div>
             <p>
-              Search the current scraped deals across Wegmans, Walmart, Aldi, Lidl, and Target to find the
-              lowest listed price.
+              Search the current scraped deals across Wegmans, Walmart, Aldi, Lidl, Target, and Kroger to
+              find the lowest listed price.
             </p>
           </div>
 
@@ -617,7 +707,19 @@ export default function App() {
             </div>
           ) : null}
 
-          {bestPriceTokens.length > 0 && !bestPriceWinner ? (
+          {bestPriceTokens.length > 0 && bestPriceLoading ? (
+            <div className="empty-state compact-state">Loading the broader product catalog...</div>
+          ) : null}
+
+          {bestPriceError ? <p className="warning-banner">{bestPriceError}</p> : null}
+
+          {bestPriceFeed ? (
+            <p className="catalog-meta">
+              Catalog updated {formatTimestamp(bestPriceFeed.generatedAt)} across {bestPriceFeed.itemCount} items.
+            </p>
+          ) : null}
+
+          {bestPriceTokens.length > 0 && !bestPriceLoading && !bestPriceWinner ? (
             <div className="empty-state compact-state">No current deal matches that search.</div>
           ) : null}
 
@@ -627,60 +729,74 @@ export default function App() {
                 <div className="best-price-card-top">
                   <div className="store-heading">
                     <img
-                      src={getTileImage(bestPriceWinner.deal, bestPriceWinner.store).src}
-                      alt={getTileImage(bestPriceWinner.deal, bestPriceWinner.store).alt}
+                      src={bestPriceWinner.item.image || bestPriceWinner.store.logo}
+                      alt={bestPriceWinner.item.image ? bestPriceWinner.item.title : `${bestPriceWinner.store.name} logo`}
                       className="deal-image best-price-image"
                     />
                     <div>
                       <p className="section-kicker">Lowest current match</p>
-                      <h2>{bestPriceWinner.deal.title}</h2>
+                      <h2>{bestPriceWinner.item.title}</h2>
                     </div>
                   </div>
-                  <p className="best-price-value">{bestPriceWinner.deal.price}</p>
+                  <p className="best-price-value">{bestPriceWinner.item.price}</p>
                 </div>
 
                 <div className="best-price-meta">
                   <span className="deal-tag">{bestPriceWinner.store.name}</span>
-                  {bestPriceWinner.deal.category ? (
-                    <span className="deal-tag deal-tag-warm">{bestPriceWinner.deal.category}</span>
+                  {bestPriceWinner.item.sourceLabel ? (
+                    <span className="deal-tag deal-tag-warm">{bestPriceWinner.item.sourceLabel}</span>
                   ) : null}
                 </div>
 
-                {bestPriceWinner.deal.detail ? (
-                  <p className="deal-detail best-price-detail">{bestPriceWinner.deal.detail}</p>
+                {bestPriceWinner.item.detail ? (
+                  <p className="deal-detail best-price-detail">{bestPriceWinner.item.detail}</p>
                 ) : null}
 
                 <div className="deal-actions">
-                  {bestPriceWinner.deal.link ? (
-                    <a href={bestPriceWinner.deal.link} target="_blank" rel="noreferrer" className="deal-link">
+                  {bestPriceWinner.item.link ? (
+                    <a href={bestPriceWinner.item.link} target="_blank" rel="noreferrer" className="deal-link">
                       Open item
                     </a>
                   ) : null}
-                  <button
-                    type="button"
-                    className={`track-btn ${watchlist.includes(bestPriceWinner.deal.id) ? 'is-tracked' : ''}`}
-                    onClick={() => toggleWatch(bestPriceWinner.deal.id)}
-                  >
-                    {watchlist.includes(bestPriceWinner.deal.id) ? 'Tracked' : 'Track'}
-                  </button>
                 </div>
+
+                {bestPriceCrossChecks.length > 0 ? (
+                  <div className="cross-check-links">
+                    <p className="catalog-meta">Direct links for the stores that were cross-checked</p>
+                    <div className="cross-check-grid">
+                      {bestPriceCrossChecks.map(({ store, item }) => (
+                        <a
+                          key={`${store.id}-${item.id}`}
+                          href={item.link}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="cross-check-link"
+                        >
+                          <img src={store.logo} alt={`${store.name} logo`} className="deal-logo" />
+                          <span>{store.name}</span>
+                          <strong>{item.price}</strong>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
               </article>
 
               <div className="best-price-results">
-                {bestPriceShortlist.map(({ store, deal }, index) => (
-                  <article key={deal.id} className="best-price-row">
+                {bestPriceShortlist.map(({ store, item }, index) => (
+                  <article key={item.id} className="best-price-row">
                     <div className="best-price-rank">{index + 1}</div>
                     <img src={store.logo} alt={`${store.name} logo`} className="deal-logo" />
                     <div className="best-price-copy">
-                      <strong>{deal.title}</strong>
+                      <strong>{item.title}</strong>
                       <p>
                         {store.name}
-                        {deal.detail ? ` • ${deal.detail}` : ''}
+                        {item.detail ? ` • ${item.detail}` : ''}
                       </p>
                     </div>
                     <div className="best-price-price">
-                      <strong>{deal.price}</strong>
-                      <span>{deal.previousPrice ? `Was ${deal.previousPrice}` : 'Current listed price'}</span>
+                      <strong>{item.price}</strong>
+                      <span>{item.sourceLabel || 'Current listed price'}</span>
                     </div>
                   </article>
                 ))}

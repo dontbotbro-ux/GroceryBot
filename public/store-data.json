@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-07T18:20:55.580Z",
+  "generatedAt": "2026-03-08T00:10:47.914Z",
   "stores": [
     {
       "id": "wegmans",
@@ -8,7 +8,7 @@
       "logo": "/logos/wegmans.svg",
       "sourceUrl": "https://www.wegmans.com/shop/featured/Hot_Zone_Prices",
       "sourceLabel": "Hot Zone Prices",
-      "fetchedAt": "2026-03-07T18:20:55.580Z",
+      "fetchedAt": "2026-03-07T23:28:21.147Z",
       "status": "ok",
       "deals": [
         {
@@ -109,57 +109,23 @@
       "logo": "/logos/walmart.svg",
       "sourceUrl": "https://www.walmart.com/c/kp/groceries-deals",
       "sourceLabel": "Groceries Deals",
-      "fetchedAt": "2026-03-07T18:20:55.580Z",
+      "fetchedAt": "2026-03-07T23:28:21.147Z",
       "status": "ok",
       "deals": [
         {
-          "id": "walmart-fresh-whole-russet-potatoes-5-lb-bag-7",
-          "title": "Fresh Whole Russet Potatoes 5 lb Bag",
-          "price": "$2.47",
-          "previousPrice": "$3.74",
-          "savings": "Save $1.27",
+          "id": "walmart-fresh-hass-avocados-each-9",
+          "title": "Fresh Hass Avocados, Each",
+          "price": "$0.55",
+          "previousPrice": "$0.62",
+          "savings": "Save $0.07",
           "detail": "",
           "expires": "",
           "category": "Rollback",
-          "link": "https://www.walmart.com/ip/Fresh-Whole-Russet-Potatoes-5lb-bag/10447837?classType=REGULAR&athbdg=L1300",
-          "image": "https://i5.walmartimages.com/seo/Fresh-Whole-Russet-Potatoes-5lb-bag_39e383c7-abe5-42fa-9078-5d6d0bb5c0d4.8fc19a526bf85bd640d369c4c85a2bf2.jpeg?odnHeight=576&odnWidth=576&odnBg=FFFFFF"
+          "link": "https://www.walmart.com/ip/Fresh-Hass-Avocados-Each/44390949?classType=REGULAR&athbdg=L1300",
+          "image": "https://i5.walmartimages.com/seo/Fresh-Hass-Avocados-Each_af510d27-f416-4691-99fa-0943d730f8d2.8607ec56ce71993860620dc4c8ca9cd6.jpeg?odnHeight=576&odnWidth=576&odnBg=FFFFFF"
         },
         {
-          "id": "walmart-gorton-s-crunchy-breaded-fish-100-whole-fish-fillets-not-minced-wild-caught-alaskan-pollock-with-crunchy-panko-breadcrumbs-frozen-10-count-19-ounce-resealable-bag-3",
-          "title": "Gorton’s Crunchy Breaded Fish 100% Whole Fish Fillets (Not Minced), Wild Caught Alaskan Pollock with Crunchy Panko Breadcrumbs, Frozen, 10 Count, 19 Ounce Resealable Bag",
-          "price": "$4.87",
-          "previousPrice": "$6.86",
-          "savings": "Save $1.99",
-          "detail": "",
-          "expires": "",
-          "category": "Rollback",
-          "image": "https://i5.walmartimages.com/seo/Gorton-s-Crunchy-Breaded-Fish-100-Whole-Fish-Fillets-Not-Minced-Wild-Caught-Alaskan-Pollock-Crunchy-Panko-Breadcrumbs-Frozen-10-Count-19-Ounce-Reseal_e8597f30-1a6d-4fcd-a72e-04920659ddb5.1a8d7758b4dd75da5fecb86e12647a93.jpeg?odnHeight=576&odnWidth=576&odnBg=FFFFFF"
-        },
-        {
-          "id": "walmart-cap-n-crunch-sweetened-corn-oat-cereal-40-oz-jumbo-bag-4",
-          "title": "Cap'n Crunch Sweetened Corn & Oat Cereal, 40 oz Jumbo Bag",
-          "price": "$2.97",
-          "previousPrice": "",
-          "savings": "",
-          "detail": "",
-          "expires": "",
-          "category": "Groceries deal",
-          "image": "https://i5.walmartimages.com/seo/Cap-n-Crunch-Breakfast-Cereal-Original-40oz-Bag_0e4cd79c-c8b4-4f20-8e3a-064e46332fcc.14dc152c67e8793ad804cbda52b8347c.jpeg?odnHeight=576&odnWidth=576&odnBg=FFFFFF"
-        },
-        {
-          "id": "walmart-fresh-banana-each-5",
-          "title": "Fresh Banana, Each",
-          "price": "$0.20",
-          "previousPrice": "",
-          "savings": "",
-          "detail": "",
-          "expires": "",
-          "category": "Groceries deal",
-          "link": "https://www.walmart.com/ip/Fresh-Banana-Each/44390948?classType=REGULAR&athbdg=L1600",
-          "image": "https://i5.walmartimages.com/seo/Fresh-Banana-Each_5939a6fa-a0d6-431c-88c6-b4f21608e4be.f7cd0cc487761d74c69b7731493c1581.jpeg?odnHeight=576&odnWidth=576&odnBg=FFFFFF"
-        },
-        {
-          "id": "walmart-fresh-cucumber-each-6",
+          "id": "walmart-fresh-cucumber-each-5",
           "title": "Fresh Cucumber, Each",
           "price": "$0.66",
           "previousPrice": "",
@@ -167,11 +133,11 @@
           "detail": "",
           "expires": "",
           "category": "Groceries deal",
-          "link": "https://www.walmart.com/ip/Fresh-Cucumber-Each/44390954?classType=REGULAR",
+          "link": "https://www.walmart.com/ip/Fresh-Cucumber-Each/44390954?classType=REGULAR&athbdg=L1600",
           "image": "https://i5.walmartimages.com/seo/Fresh-Cucumber-Each_5985ccc8-109e-411d-aca7-556ab217e1da.e3770028b0d00b3fa4e6a40c4e630ef9.jpeg?odnHeight=576&odnWidth=576&odnBg=FFFFFF"
         },
         {
-          "id": "walmart-fresh-roma-tomato-each-9",
+          "id": "walmart-fresh-roma-tomato-each-7",
           "title": "Fresh Roma Tomato, Each",
           "price": "$0.23",
           "previousPrice": "",
@@ -183,7 +149,7 @@
           "image": "https://i5.walmartimages.com/seo/Fresh-Roma-Tomato-Each_ecef8a3e-ab96-445e-a16a-d639b40eb5fb.93fcc627f542f02488e5ee9d8e26f152.jpeg?odnHeight=576&odnWidth=576&odnBg=FFFFFF"
         },
         {
-          "id": "walmart-good-thins-sea-salt-corn-snacks-gluten-free-crackers-snack-crackers-3-5-oz-1",
+          "id": "walmart-good-thins-sea-salt-corn-snacks-gluten-free-crackers-snack-crackers-3-5-oz-2",
           "title": "GOOD THINS Sea Salt Corn Snacks Gluten Free Crackers, Snack Crackers, 3.5 oz",
           "price": "$3.77",
           "previousPrice": "",
@@ -194,7 +160,7 @@
           "image": "https://i5.walmartimages.com/seo/Good-Thins-Sea-Salt-Corn-Snacks-Gluten-Free-Crackers-3-5-oz_2c250665-c02a-4d78-a003-da50b1bc4a31.6a87d8ccd1236fbd6c7754a9a234ceb8.jpeg?odnHeight=576&odnWidth=576&odnBg=FFFFFF"
         },
         {
-          "id": "walmart-great-value-large-white-eggs-18-count-8",
+          "id": "walmart-great-value-large-white-eggs-18-count-6",
           "title": "Great Value Large White Eggs, 18 Count",
           "price": "$2.47",
           "previousPrice": "",
@@ -204,6 +170,40 @@
           "category": "Groceries deal",
           "link": "https://www.walmart.com/ip/Great-Value-Large-White-Eggs-18-Count/172844767?classType=REGULAR&athbdg=L1600",
           "image": "https://i5.walmartimages.com/seo/Great-Value-Large-White-Eggs-18-Count_29020399-6000-44c9-b24f-e62ae46465c0_1.4930c3b92bbbc2fa70be370e40f85446.jpeg?odnHeight=576&odnWidth=576&odnBg=FFFFFF"
+        },
+        {
+          "id": "walmart-guy-fieri-s-flavortown-sloppy-joe-mac-cheese-frozen-meals-10-oz-8",
+          "title": "Guy Fieri's Flavortown Sloppy Joe Mac & Cheese, Frozen Meals, 10 oz",
+          "price": "$5.94",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "",
+          "expires": "",
+          "category": "Groceries deal",
+          "link": "https://www.walmart.com/ip/Guy-Fieri-s-Flavortown-Sloppy-Joe-Mac-Cheese-Frozen-Meals-10-oz/1826640384?classType=REGULAR",
+          "image": "https://i5.walmartimages.com/seo/Guy-Fieri-s-Flavortown-Sloppy-Joe-Mac-Cheese-Frozen-Meals-10-oz_a8d95a27-0d4f-47ad-9137-eec07528c233.4fb2be30555e9abdbca93669e9c06df8.jpeg?odnHeight=576&odnWidth=576&odnBg=FFFFFF"
+        },
+        {
+          "id": "walmart-triscuit-rosemary-olive-oil-whole-grain-wheat-crackers-lunch-snacks-snack-crackers-8-5-oz-4",
+          "title": "Triscuit Rosemary & Olive Oil Whole Grain Wheat Crackers, Lunch Snacks, Snack Crackers, 8.5 oz",
+          "price": "$3.97",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "",
+          "expires": "",
+          "category": "Groceries deal",
+          "image": "https://i5.walmartimages.com/seo/Triscuit-Rosemary-Olive-Oil-Whole-Grain-Wheat-Crackers-8-5-oz_cc9ebc82-9b39-43a9-86ef-fd0512335627.16aac5cd9239a40013b4e181ce87f266.jpeg?odnHeight=576&odnWidth=576&odnBg=FFFFFF"
+        },
+        {
+          "id": "walmart-mccormick-30-less-sodium-chili-mild-seasoning-mix-1-25-oz-packet-3",
+          "title": "McCormick 30% Less Sodium Chili Mild Seasoning Mix, 1.25 oz Packet",
+          "price": "$1.63",
+          "previousPrice": "",
+          "savings": "",
+          "detail": "",
+          "expires": "",
+          "category": "Groceries deal",
+          "image": "https://i5.walmartimages.com/seo/McCormick-30-Less-Sodium-Chili-Mild-Seasoning-Mix-1-25-oz-Envelope_040243f5-288f-4661-a6ad-44ab9c2f0779.8eaab293a839205c8951b058c18e03c4.jpeg?odnHeight=576&odnWidth=576&odnBg=FFFFFF"
         }
       ],
       "rangeLabel": "Current Walmart grocery deals"
@@ -215,7 +215,7 @@
       "logo": "/logos/aldi.svg",
       "sourceUrl": "https://www.aldi.us/weekly-specials/this-weeks-aldi-finds",
       "sourceLabel": "This Week's ALDI Finds",
-      "fetchedAt": "2026-03-07T18:20:55.580Z",
+      "fetchedAt": "2026-03-07T23:28:21.147Z",
       "status": "ok",
       "deals": [
         {
@@ -324,7 +324,7 @@
       "logo": "/logos/lidl.svg",
       "sourceUrl": "https://www.lidl.com/",
       "sourceLabel": "myLidl Deals",
-      "fetchedAt": "2026-03-07T18:20:55.580Z",
+      "fetchedAt": "2026-03-07T23:28:21.147Z",
       "status": "ok",
       "deals": [
         {
@@ -385,7 +385,7 @@
       "logo": "/logos/target.svg",
       "sourceUrl": "https://www.target.com/c/grocery-deals/-/N-k4uyq",
       "sourceLabel": "Grocery Deals",
-      "fetchedAt": "2026-03-07T18:20:55.580Z",
+      "fetchedAt": "2026-03-07T23:28:21.147Z",
       "status": "ok",
       "deals": [
         {
@@ -413,7 +413,7 @@
           "image": "https://target.scene7.com/is/image/Target/GUEST_57c9e030-12b7-4bf8-a034-92a940da192f?wid=1900&qlt=80"
         },
         {
-          "id": "target-cheetos-crunchy-cheese-flavored-snacks-8-5oz-16",
+          "id": "target-cheetos-crunchy-cheese-flavored-snacks-8-5oz-17",
           "title": "Cheetos Crunchy Cheese Flavored Snacks - 8.5oz",
           "price": "$4.79",
           "previousPrice": "",
@@ -425,7 +425,7 @@
           "image": "https://target.scene7.com/is/image/Target/GUEST_de99e464-3a00-4f3a-9bd0-9b284ce9ceaa?wid=1900&qlt=80"
         },
         {
-          "id": "target-cheetos-crunchy-flamin-hot-8-5oz-8",
+          "id": "target-cheetos-crunchy-flamin-hot-8-5oz-9",
           "title": "Cheetos Crunchy Flamin Hot - 8.5oz",
           "price": "$4.79",
           "previousPrice": "",
@@ -461,7 +461,7 @@
           "image": "https://target.scene7.com/is/image/Target/GUEST_f38e0e8a-44c8-4917-94b5-0ac7ecc07177?wid=1900&qlt=80"
         },
         {
-          "id": "target-cheez-it-gluten-free-snack-crackers-9oz-13",
+          "id": "target-cheez-it-gluten-free-snack-crackers-9oz-14",
           "title": "Cheez-It Gluten Free Snack Crackers - 9oz",
           "price": "$3.99",
           "previousPrice": "",
@@ -486,6 +486,31 @@
         }
       ],
       "rangeLabel": "Current grocery product deals"
+    },
+    {
+      "id": "kroger",
+      "name": "Kroger",
+      "theme": "#0f52a2",
+      "logo": "/logos/kroger.svg",
+      "sourceUrl": "https://www.kroger.com/pr/top-deals",
+      "sourceLabel": "Top Deals",
+      "fetchedAt": "2026-03-08T00:10:47.914Z",
+      "status": "partial",
+      "deals": [
+        {
+          "id": "kroger-0003338320027",
+          "title": "Fresh Strawberries - 1 LB Clamshell",
+          "price": "$1.99",
+          "previousPrice": "$3.99",
+          "savings": "Save $2.00",
+          "detail": "Fresh Fruit • UPC: 0003338320027",
+          "expires": "",
+          "category": "Fresh Fruit",
+          "link": "https://www.kroger.com/p/fresh-strawberries-1-lb-clamshell/0003338320027",
+          "image": "https://www.kroger.com/product/images/large/front/0003338320027"
+        }
+      ],
+      "rangeLabel": "Current Kroger top deals"
     }
   ]
 }

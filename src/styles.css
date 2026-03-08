@@ -464,6 +464,12 @@ a {
   max-width: 540px;
 }
 
+.catalog-meta {
+  margin: -6px 0 0;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
 .best-price-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
@@ -517,6 +523,62 @@ a {
 
 .best-price-detail {
   max-width: 44rem;
+}
+
+.cross-check-links {
+  display: grid;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.cross-check-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+}
+
+.cross-check-link {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--paper-strong);
+  color: var(--ink);
+  text-decoration: none;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.cross-check-link:hover {
+  transform: translateY(-1px);
+  border-color: rgba(31, 74, 52, 0.2);
+  background: rgba(31, 74, 52, 0.05);
+  box-shadow: 0 10px 24px rgba(31, 39, 31, 0.08);
+}
+
+.cross-check-link span,
+.cross-check-link strong {
+  min-width: 0;
+}
+
+.cross-check-link span {
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.cross-check-link strong {
+  font-family: 'IBM Plex Sans Condensed', sans-serif;
+  font-size: 0.86rem;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 .best-price-results {
@@ -887,6 +949,10 @@ a {
   }
 
   .hero-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .cross-check-grid {
     grid-template-columns: 1fr;
   }
 

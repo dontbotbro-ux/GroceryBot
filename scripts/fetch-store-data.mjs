@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
+import vm from 'node:vm'
 import * as cheerio from 'cheerio'
 import { chromium } from 'playwright'
 
@@ -8,6 +9,7 @@ const rootDir = process.cwd()
 const publicDir = path.join(rootDir, 'public')
 const logosDir = path.join(publicDir, 'logos')
 const outputFile = path.join(publicDir, 'store-data.json')
+const catalogOutputFile = path.join(publicDir, 'best-price-data.json')
 
 const userAgent =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
@@ -17,6 +19,50 @@ const groceryKeywords =
 
 const mixedMerchandiseKeywords =
   /athletic|bin|box(es)?|camping|coir|garden|grid|ladies|landscape|mat|men'?s|pant|planter|sensory|shirt|storage|table/i
+
+const krogerDealSearchLinks = [
+  '/search?keyword=TDFreshCuratedSavingsP2W1&query=TDFreshCuratedSavingsP2W1&searchType=mktg%20attribute&monet=curated&fulfillment=all&pzn=relevance',
+  '/search?keyword=MustBuyTDSoda1&query=MustBuyTDSoda1&searchType=mktg%20attribute&monet=curated&fulfillment=all&pzn=relevance',
+  '/search?keyword=TDBabySave10P1W326&query=TDBabySave10P1W326&searchType=mktg%20attribute&monet=curated&fulfillment=all&pzn=relevance',
+]
+
+const krogerGroceryCategoryLinks = [
+  '/pl/fresh-fruits-vegetables/06',
+  '/pl/fresh-fruit/06111',
+  '/pl/meat-seafood/05',
+  '/pl/breakfast/03',
+  '/pl/deli/13',
+]
+
+const krogerSeedProducts = [
+  { upc: '0003338320027', description: 'fresh strawberries - 1 lb clamshell' },
+  { upc: '0020324300000', description: 'kroger natural pork baby back ribs' },
+  { upc: '0000000004225', description: 'fresh large ripe avocado' },
+  { upc: '0001111079542', description: 'private selection petite gold gourmet potatoes' },
+  { upc: '0001111008068', description: 'simple truth jumbo raw shrimp peeled and deveined tail off' },
+  { upc: '0003338324000', description: 'fresh blackberries - 6 oz clamshell' },
+  { upc: '0000000003283', description: 'large honeycrisp apple - each' },
+  { upc: '0000000004430', description: 'fresh ripe whole pineapple' },
+  { upc: '0001111022298', description: 'private selection seedless mini cucumbers' },
+  { upc: '0007224013381', description: 'wonderful halos mandarins' },
+  { upc: '0007790011553', description: 'jimmy dean premium pork regular breakfast sausage roll' },
+  { upc: '0001111091687', description: 'private selection campari tomatoes' },
+]
+
+const krogerStaticFallbackItems = [
+  {
+    id: '0003338320027',
+    title: 'Fresh Strawberries - 1 LB Clamshell',
+    priceValue: 1.99,
+    price: '$1.99',
+    previousPrice: '$3.99',
+    detail: 'Fresh Fruit • UPC: 0003338320027',
+    category: 'Fresh Fruit',
+    link: 'https://www.kroger.com/p/fresh-strawberries-1-lb-clamshell/0003338320027',
+    image: 'https://www.kroger.com/product/images/large/front/0003338320027',
+    sourceLabel: 'Grocery',
+  },
+]
 
 export const stores = [
   {
@@ -59,6 +105,15 @@ export const stores = [
     sourceLabel: 'Grocery Deals',
     logoUrl: 'https://www.target.com/icons/light/BullseyeRed.svg',
   },
+  {
+    id: 'kroger',
+    name: 'Kroger',
+    theme: '#0f52a2',
+    sourceUrl: 'https://www.kroger.com/pr/top-deals',
+    sourceLabel: 'Top Deals',
+    logoUrl:
+      'https://www.kroger.com/content/v2/binary/image/banner/logowhite/imageset/kroger_svg_logo_link_white--kroger_svg_logo_link_white--freshcart-singlecolor.svg',
+  },
 ]
 
 async function readExistingFeed() {
@@ -67,6 +122,21 @@ async function readExistingFeed() {
     const parsed = JSON.parse(raw)
 
     if (!parsed || !Array.isArray(parsed.stores)) {
+      return null
+    }
+
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+async function readExistingCatalog() {
+  try {
+    const raw = await fs.readFile(catalogOutputFile, 'utf8')
+    const parsed = JSON.parse(raw)
+
+    if (!parsed || !Array.isArray(parsed.items)) {
       return null
     }
 
@@ -219,6 +289,107 @@ function buildFallbackWarning(currentWarning, previousStore) {
   return `${base} Showing the last successful stored results instead.`
 }
 
+function stripHtml(value = '') {
+  const $ = cheerio.load(`<div>${String(value)}</div>`)
+  return normalizeText($.text())
+}
+
+function formatDollarValue(value) {
+  if (!Number.isFinite(value)) {
+    return ''
+  }
+
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: value % 1 === 0 ? 0 : 2,
+    maximumFractionDigits: 2,
+  }).format(value)
+}
+
+function toPriceValue(value) {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null
+  }
+
+  if (typeof value !== 'string') {
+    return null
+  }
+
+  const match = value.replace(/,/g, '').match(/(\d+(?:\.\d+)?)/)
+
+  if (!match) {
+    return null
+  }
+
+  const parsed = Number(match[1])
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function dedupeCatalogItems(items) {
+  const byKey = new Map()
+
+  for (const item of items) {
+    const key = [
+      item.storeId,
+      (item.link ?? '').toLowerCase(),
+      item.title.toLowerCase(),
+      (item.detail ?? '').toLowerCase(),
+    ].join('::')
+    const current = byKey.get(key)
+
+    if (!current) {
+      byKey.set(key, item)
+      continue
+    }
+
+    const shouldReplace =
+      item.priceValue < current.priceValue ||
+      (!current.image && item.image) ||
+      (!current.link && item.link)
+
+    if (shouldReplace) {
+      byKey.set(key, {
+        ...current,
+        ...item,
+      })
+    }
+  }
+
+  return [...byKey.values()].sort(
+    (left, right) =>
+      left.storeId.localeCompare(right.storeId) ||
+      left.title.localeCompare(right.title) ||
+      left.priceValue - right.priceValue,
+  )
+}
+
+function buildCatalogItems(config, sourceLabel, items) {
+  return items
+    .map((item, index) => {
+      const title = normalizeText(item.title)
+      const priceValue = toPriceValue(item.priceValue ?? item.price)
+
+      if (!title || priceValue === null) {
+        return null
+      }
+
+      return {
+        id: item.id ? `${config.id}-${slugify(String(item.id))}` : `${config.id}-${slugify(title)}-${index + 1}`,
+        storeId: config.id,
+        sourceLabel,
+        title,
+        price: normalizeText(item.price || formatDollarValue(priceValue)),
+        priceValue,
+        detail: normalizeText(item.detail ?? ''),
+        category: normalizeText(item.category ?? ''),
+        link: item.link ? absoluteUrl(config.sourceUrl, item.link) : undefined,
+        image: item.image ? absoluteUrl(config.sourceUrl, item.image) : undefined,
+      }
+    })
+    .filter(Boolean)
+}
+
 async function downloadLogos() {
   await fs.mkdir(logosDir, { recursive: true })
 
@@ -230,6 +401,7 @@ async function downloadLogos() {
             'user-agent': userAgent,
             'accept-language': 'en-US,en;q=0.9',
           },
+          signal: AbortSignal.timeout(20000),
         })
 
         if (!response.ok) {
@@ -260,6 +432,204 @@ async function newPage(browser) {
       height: 1200,
     },
   })
+}
+
+async function mapWithConcurrency(items, limit, mapper) {
+  const results = new Array(items.length)
+  let nextIndex = 0
+
+  async function worker() {
+    while (nextIndex < items.length) {
+      const currentIndex = nextIndex
+      nextIndex += 1
+      results[currentIndex] = await mapper(items[currentIndex], currentIndex)
+    }
+  }
+
+  const workerCount = Math.max(1, Math.min(limit, items.length))
+  await Promise.all(Array.from({ length: workerCount }, () => worker()))
+  return results
+}
+
+async function fetchHtml(url) {
+  let response
+
+  try {
+    response = await fetch(url, {
+      headers: {
+        'user-agent': userAgent,
+        'accept-language': 'en-US,en;q=0.9',
+      },
+      signal: AbortSignal.timeout(45000),
+    })
+  } catch (error) {
+    throw new Error(`${url}: ${error instanceof Error ? error.message : 'Request failed'}`)
+  }
+
+  if (!response.ok) {
+    throw new Error(`${url}: request returned ${response.status}`)
+  }
+
+  return response.text()
+}
+
+function parseKrogerState(html) {
+  const $ = cheerio.load(html)
+  const script = $('script')
+    .toArray()
+    .map((element) => $(element).html() ?? '')
+    .find((value) => value.includes('window.__INITIAL_STATE__ = JSON.parse('))
+
+  if (!script) {
+    return null
+  }
+
+  const context = { window: {} }
+  vm.runInNewContext(script, context)
+  return context.window.__INITIAL_STATE__ ?? null
+}
+
+function buildKrogerProductUrl(product) {
+  return `https://www.kroger.com/p/${slugify(product.description || product.title || product.upc || 'product')}/${product.upc}`
+}
+
+function getKrogerPrimaryCategory($) {
+  const breadcrumbs = $('nav.kds-Breadcrumb li a')
+    .map((_, element) => normalizeText($(element).text()))
+    .get()
+    .filter(Boolean)
+
+  return breadcrumbs.at(-1) ?? ''
+}
+
+async function scrapeKrogerListingPage(url) {
+  const html = await fetchHtml(url)
+  const state = parseKrogerState(html)
+  const $ = cheerio.load(html)
+
+  return {
+    title:
+      normalizeText($('main h1').first().text()) ||
+      normalizeText($('title').first().text().replace(/\s*-\s*Kroger$/i, '')),
+    products:
+      state?.search?.searchAll?.response?.products?.map((product) => ({
+        upc: product.upc ?? product.gtin13 ?? '',
+        description: normalizeText(product.description ?? ''),
+      })) ?? [],
+  }
+}
+
+async function fetchKrogerProduct(product) {
+  const url = buildKrogerProductUrl(product)
+  const html = await fetchHtml(url)
+  const $ = cheerio.load(html)
+  const priceNode = $('data.kds-Price').first()
+  const priceValue = toPriceValue(priceNode.attr('value') ?? '')
+  const canonical = $('link[rel="canonical"]').attr('href') ?? url
+  const image =
+    $('meta[property="og:image"]').attr('content') ??
+    $('[data-testid="main-image-container"] img').first().attr('src') ??
+    ''
+  const title =
+    normalizeText($('[data-testid="product-details-name"]').first().text()) ||
+    normalizeText(product.description)
+  const previousPrice = normalizeText($('.kds-Price-original').first().text())
+  const detail = normalizeText(
+    [
+      getKrogerPrimaryCategory($),
+      $('[data-testid="product-details-upc"]').first().text(),
+    ]
+      .filter(Boolean)
+      .join(' • '),
+  )
+
+  if (priceValue === null) {
+    throw new Error(`Kroger PDP price missing for ${product.upc}`)
+  }
+
+  return {
+    id: product.upc,
+    title,
+    priceValue,
+    price: formatDollarValue(priceValue),
+    previousPrice,
+    detail,
+    category: getKrogerPrimaryCategory($),
+    link: canonical,
+    image,
+  }
+}
+
+async function collectKrogerDealSources() {
+  let fallbackToDepartments = false
+  let searchLinks = krogerDealSearchLinks
+
+  try {
+    const html = await fetchHtml('https://www.kroger.com/pr/top-deals')
+    const $ = cheerio.load(html)
+    const extractedLinks = [...new Set(
+      $('a[href*="/search?"]')
+        .map((_, element) => $(element).attr('href') ?? '')
+        .get()
+        .filter(Boolean),
+    )]
+
+    if (extractedLinks.length > 0) {
+      searchLinks = extractedLinks
+    }
+  } catch (error) {
+    console.warn(
+      `[kroger] top deals source fallback: ${error instanceof Error ? error.message : 'Unable to load top deals page'}`,
+    )
+    fallbackToDepartments = true
+  }
+
+  if (fallbackToDepartments) {
+    return []
+  }
+
+  return searchLinks.map((href, index) => ({
+    sourceLabel: index === 0 ? 'Top Deals' : 'Top Deals',
+    url: absoluteUrl('https://www.kroger.com/pr/top-deals', href),
+    maxItems: 8,
+  }))
+}
+
+async function collectKrogerCatalogSources() {
+  const dealSources = await collectKrogerDealSources()
+  let categoryLinks = krogerGroceryCategoryLinks
+
+  try {
+    const html = await fetchHtml('https://www.kroger.com/d/grocery')
+    const $ = cheerio.load(html)
+    const extractedLinks = [...new Set(
+      $('a[href^="/pl/"]')
+        .map((_, element) => $(element).attr('href') ?? '')
+        .get()
+        .filter((href) => href && !href.includes('brandName=')),
+    )]
+
+    if (extractedLinks.length > 0) {
+      categoryLinks = extractedLinks
+    }
+  } catch (error) {
+    console.warn(
+      `[kroger] grocery source fallback: ${error instanceof Error ? error.message : 'Unable to load grocery page'}`,
+    )
+    categoryLinks = []
+  }
+
+  return [
+    ...categoryLinks.slice(0, 12).map((href) => ({
+      sourceLabel: 'Grocery',
+      url: absoluteUrl('https://www.kroger.com/d/grocery', href),
+      maxItems: 16,
+    })),
+    ...dealSources.map((source) => ({
+      ...source,
+      maxItems: 10,
+    })),
+  ]
 }
 
 async function scrapeWegmans(browser, logoPath, fetchedAt) {
@@ -445,6 +815,72 @@ async function scrapeTarget(browser, logoPath, fetchedAt) {
   }
 }
 
+async function scrapeKroger(logoPath, fetchedAt) {
+  const config = stores.find((store) => store.id === 'kroger')
+  const sources = await collectKrogerDealSources()
+  const listingProducts = []
+
+  for (const source of sources) {
+    let listing
+
+    try {
+      listing = await scrapeKrogerListingPage(source.url)
+    } catch (error) {
+      console.warn(`[kroger] ${source.url}: ${error instanceof Error ? error.message : 'Unable to load listing page'}`)
+      continue
+    }
+
+    listingProducts.push(
+      ...listing.products.slice(0, source.maxItems).map((product) => ({
+        ...product,
+        sourceLabel: source.sourceLabel,
+        category: listing.title || source.sourceLabel,
+      })),
+    )
+  }
+
+  const dedupedProducts = [...new Map(listingProducts.map((product) => [product.upc, product])).values()]
+  const productsToEnrich =
+    dedupedProducts.length > 0
+      ? dedupedProducts
+      : krogerSeedProducts.map((product) => ({
+          ...product,
+          sourceLabel: 'Grocery',
+          category: 'Kroger Grocery',
+        }))
+  const enriched = (
+    await mapWithConcurrency(productsToEnrich, 6, async (product) => {
+      try {
+        return await fetchKrogerProduct(product)
+      } catch (error) {
+        console.warn(
+          `[kroger] ${product.upc}: ${error instanceof Error ? error.message : 'Unable to enrich product'}`,
+        )
+        return null
+      }
+    })
+  ).filter(Boolean)
+  const finalProducts = enriched.length > 0 ? enriched : krogerStaticFallbackItems
+
+  return buildStore(
+    config,
+    logoPath,
+    fetchedAt,
+    finalProducts.map((product) => ({
+      title: product.title,
+      price: product.price,
+      previousPrice: product.previousPrice,
+      detail: product.detail,
+      link: product.link,
+      image: product.image,
+      category: product.category || 'Top Deals',
+    })),
+    {
+      rangeLabel: 'Current Kroger top deals',
+    },
+  )
+}
+
 async function scrapeWalmart(logoPath, fetchedAt) {
   const config = stores.find((store) => store.id === 'walmart')
   const response = await fetch(config.sourceUrl, {
@@ -502,6 +938,521 @@ async function scrapeWalmart(logoPath, fetchedAt) {
   })
 }
 
+async function scrapeWegmansCatalog() {
+  const config = stores.find((store) => store.id === 'wegmans')
+  const endpoint =
+    'https://qgppr19v8v-dsn.algolia.net/1/indexes/*/queries?x-algolia-agent=Algolia%20for%20JavaScript%20(5.37.0)%3B%20Search%20(5.37.0)%3B%20Browser&x-algolia-api-key=9a10b1401634e9a6e55161c3a60c200d&x-algolia-application-id=QGPPR19V8V'
+  const hitsPerPage = 1000
+  const items = []
+  let pageNumber = 0
+  let totalPages = 1
+
+  while (pageNumber < totalPages) {
+    const body = {
+      requests: [
+        {
+          indexName: 'products',
+          analytics: false,
+          attributesToHighlight: [],
+          clickAnalytics: false,
+          enableRules: true,
+          facets: ['*'],
+          filters: 'storeNumber:41 AND excludeFromWeb:false AND isSoldAtStore:true AND fulfilmentType:instore',
+          highlightPostTag: '__/ais-highlight__',
+          highlightPreTag: '__ais-highlight__',
+          hitsPerPage,
+          maxValuesPerFacet: 1000,
+          page: pageNumber,
+          responseFields: ['hits', 'nbHits', 'nbPages', 'page', 'hitsPerPage'],
+          ruleContexts: ['clp', 'departments', 'store-41', 'fulfillment-instore', 'anonymous'],
+          userToken: 'anonymous-grobots',
+        },
+      ],
+    }
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'user-agent': userAgent,
+        'accept-language': 'en-US,en;q=0.9',
+      },
+      body: JSON.stringify(body),
+    })
+
+    if (!response.ok) {
+      throw new Error(`Wegmans catalog returned ${response.status}`)
+    }
+
+    const payload = await response.json()
+    const result = payload.results?.[0]
+
+    if (!result) {
+      break
+    }
+
+    totalPages = result.nbPages ?? totalPages
+    pageNumber += 1
+
+    items.push(
+      ...buildCatalogItems(
+        config,
+        'Shop Categories',
+        result.hits
+          .filter((hit) => (hit.price_inStore?.amount ?? hit.price_delivery?.amount) !== undefined && hit.isAvailable !== false)
+          .map((hit) => ({
+            id: hit.objectID ?? hit.productId,
+            title: hit.productName ?? hit.webProductDescription,
+            priceValue: hit.price_inStore?.amount ?? hit.price_delivery?.amount,
+            price: formatDollarValue(hit.price_inStore?.amount ?? hit.price_delivery?.amount),
+            detail: [hit.packSize, hit.price_inStore?.unitPrice ?? hit.price_delivery?.unitPrice].filter(Boolean).join(' • '),
+            category: hit.categories?.lvl0 ?? hit.categoryNodes?.lvl0 ?? '',
+            link: hit.slug ? `/shop/product/${hit.slug}` : '',
+            image: hit.images?.[0] ?? '',
+          })),
+      ),
+    )
+  }
+
+  return items
+}
+
+async function scrapeAldiCatalogPage(url, sourceLabel) {
+  const config = stores.find((store) => store.id === 'aldi')
+  const response = await fetch(url, {
+    headers: {
+      'user-agent': userAgent,
+      'accept-language': 'en-US,en;q=0.9',
+    },
+  })
+
+  if (!response.ok) {
+    throw new Error(`ALDI catalog returned ${response.status}`)
+  }
+
+  const html = await response.text()
+  const $ = cheerio.load(html)
+  const items = buildCatalogItems(
+    config,
+    sourceLabel,
+    $('.product-tile')
+      .map((_, element) => {
+        const card = $(element)
+        const link = card.find('a.base-link').first()
+
+        return {
+          id: link.attr('href') ?? '',
+          title: card.find('.product-tile__name').first().text(),
+          price: card.find('.product-tile__price').first().text(),
+          detail: [card.find('.product-tile__brandname').first().text(), card.find('.product-tile__unit-of-measurement').first().text()]
+            .filter(Boolean)
+            .join(' • '),
+          category: sourceLabel,
+          link: link.attr('href') ?? '',
+          image: card.find('.product-tile__picture img').first().attr('src') ?? '',
+        }
+      })
+      .get(),
+  )
+  const totalPages = Math.max(
+    1,
+    ...$('.base-pagination a')
+      .map((_, element) => {
+        const href = $(element).attr('href') ?? ''
+        const page = href.match(/page=(\d+)/i)?.[1]
+        return page ? Number(page) : 1
+      })
+      .get(),
+  )
+
+  return {
+    items,
+    totalPages,
+  }
+}
+
+async function scrapeAldiCatalog() {
+  const baseUrl = 'https://www.aldi.us/products'
+  const productPage = await scrapeAldiCatalogPage(baseUrl, 'All Products')
+  const items = [...productPage.items]
+
+  for (let pageNumber = 2; pageNumber <= productPage.totalPages; pageNumber += 1) {
+    const page = await scrapeAldiCatalogPage(`${baseUrl}?page=${pageNumber}`, 'All Products')
+    items.push(...page.items)
+  }
+
+  const findsPage = await scrapeAldiCatalogPage(
+    'https://www.aldi.us/weekly-specials/this-weeks-aldi-finds',
+    "This Week's ALDI Finds",
+  )
+  items.push(...findsPage.items)
+
+  return items
+}
+
+async function scrapeLidlCatalog(browser) {
+  const config = stores.find((store) => store.id === 'lidl')
+  const response = await fetch('https://mobileapi.lidl.com/v1/categories?includeProducts=true&sort=productAtoZ&storeId=US01053', {
+    headers: {
+      'user-agent': userAgent,
+      'accept-language': 'en-US,en;q=0.9',
+    },
+  })
+
+  if (!response.ok) {
+    throw new Error(`Lidl catalog returned ${response.status}`)
+  }
+
+  const categories = await response.json()
+  const items = buildCatalogItems(
+    config,
+    'Products',
+    categories.flatMap((category) =>
+      (category.products ?? []).map((product) => ({
+        id: product.id ?? product.itemId,
+        title: product.name,
+        priceValue:
+          product.priceInformation?.myLidlPrice?.currentPrice?.value ??
+          product.priceInformation?.promotionPrice?.currentPrice?.value ??
+          product.priceInformation?.currentPrice?.currentPrice?.value,
+        detail: [
+          product.description,
+          product.priceInformation?.currentPrice?.currentPrice?.basePriceText,
+        ]
+          .filter(Boolean)
+          .join(' • '),
+        category: category.name?.en ?? 'Products',
+        image: product.images?.[0]?.url ?? '',
+      })),
+    ),
+  )
+
+  const promoPages = [
+    { url: 'https://www.lidl.com/mylidl-deals?category=all', sourceLabel: 'myLidl Deals' },
+    { url: 'https://www.lidl.com/specials?category=all-current', sourceLabel: 'Specials' },
+  ]
+
+  for (const entry of promoPages) {
+    const page = await newPage(browser)
+
+    try {
+      await page.goto(entry.url, {
+        waitUntil: 'domcontentloaded',
+        timeout: 90000,
+      })
+      await page.waitForTimeout(6000)
+
+      const extracted = await page.evaluate((sourceLabel) => {
+        const normalize = (value = '') => value.replace(/\u00a0/g, ' ').replace(/\s+/g, ' ').trim()
+        return Array.from(document.querySelectorAll('a.clickable.link[href*="/products/"]')).map((link) => ({
+          id: link.getAttribute('href') ?? '',
+          title: normalize(link.querySelector('h2')?.textContent ?? ''),
+          price: normalize(link.querySelector('[class*="_price_"]')?.textContent ?? '').replace(/\*+$/g, ''),
+          detail: normalize(link.querySelector('[class*="_strike_"]')?.textContent ?? ''),
+          category: sourceLabel,
+          link: link.getAttribute('href') ?? '',
+          image: link.querySelector('img')?.getAttribute('src') ?? link.querySelector('img')?.getAttribute('data-src') ?? '',
+        }))
+      }, entry.sourceLabel)
+
+      items.push(...buildCatalogItems(config, entry.sourceLabel, extracted))
+    } finally {
+      await page.close()
+    }
+  }
+
+  return items
+}
+
+function buildTargetCatalogUrl(categoryId, offset, pagePath) {
+  const url = new URL('https://redsky.target.com/redsky_aggregations/v1/web/plp_search_v2')
+  const defaultParams = {
+    default_purchasability_filter: 'true',
+    include_sponsored: 'true',
+    include_review_summarization: 'true',
+    platform: 'desktop',
+    pricing_store_id: '772',
+    spellcheck: 'true',
+    store_ids: '772,2175,2138,1857,2017',
+    visitor_id: '019CC995BE1C0200A15D07904C0B0080',
+    scheduled_delivery_store_id: '772',
+    zip: '22407',
+    key: '9f36aeafbe60771e321a7cc95a78140772ab3e96',
+    channel: 'WEB',
+    include_dmc_dmr: 'true',
+    useragent: 'Mozilla/5.0',
+  }
+
+  for (const [key, value] of Object.entries(defaultParams)) {
+    url.searchParams.set(key, value)
+  }
+
+  url.searchParams.set('category', categoryId)
+  url.searchParams.set('count', '24')
+  url.searchParams.set('offset', String(offset))
+  url.searchParams.set('page', pagePath)
+  return url.toString()
+}
+
+async function scrapeTargetCatalogByCategory(categoryId, pagePath, sourceLabel) {
+  const config = stores.find((store) => store.id === 'target')
+  const items = []
+  let offset = 0
+  let totalPages = 1
+  let currentPage = 1
+
+  while (currentPage <= totalPages) {
+    const response = await fetch(buildTargetCatalogUrl(categoryId, offset, pagePath), {
+      headers: {
+        'user-agent': userAgent,
+        'accept-language': 'en-US,en;q=0.9',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Target catalog returned ${response.status}`)
+    }
+
+    const payload = await response.json()
+    const products = payload.data?.search?.products ?? []
+    const metadata = payload.data?.search?.search_response?.metadata
+
+    if (products.length === 0) {
+      break
+    }
+
+    totalPages = metadata?.total_pages ?? totalPages
+    currentPage = metadata?.current_page ?? currentPage
+
+    items.push(
+      ...buildCatalogItems(
+        config,
+        sourceLabel,
+        products.map((product) => ({
+          id: product.tcin,
+          title: stripHtml(product.item?.product_description?.title ?? product.item?.enrichment?.buy_url ?? ''),
+          priceValue:
+            product.price?.current_retail ??
+            product.price?.formatted_current_price,
+          detail: [
+            stripHtml(product.item?.product_description?.bullet_descriptions?.[0] ?? ''),
+            product.item?.primary_brand?.name,
+          ]
+            .filter(Boolean)
+            .join(' • '),
+          category: sourceLabel,
+          link: product.item?.enrichment?.buy_url ?? (product.tcin ? `/p/-/A-${product.tcin}` : ''),
+          image: product.item?.enrichment?.images?.primary_image_url ?? '',
+        })),
+      ),
+    )
+
+    if (currentPage >= totalPages) {
+      break
+    }
+
+    offset += 24
+    currentPage += 1
+  }
+
+  return items
+}
+
+async function scrapeTargetCatalog() {
+  const items = await scrapeTargetCatalogByCategory('5xt1a', '/c/grocery/-/N-5xt1a', 'Grocery')
+  items.push(
+    ...(await scrapeTargetCatalogByCategory(
+      'k4uyq',
+      '/c/grocery-deals/-/N-k4uyq',
+      'Grocery Deals',
+    )),
+  )
+  return items
+}
+
+async function scrapeWalmartCatalog() {
+  const config = stores.find((store) => store.id === 'walmart')
+  const urls = [
+    {
+      url: 'https://www.walmart.com/c/kp/groceries-deals',
+      sourceLabel: 'Groceries Deals',
+    },
+    {
+      url: 'https://www.walmart.com/cp/food/976759?povid=GlobalNav_rWeb_Grocery_GroceryShopAll',
+      sourceLabel: 'Food Shop All',
+    },
+  ]
+  const items = []
+
+  for (const source of urls) {
+    const response = await fetch(source.url, {
+      headers: {
+        'user-agent': userAgent,
+        'accept-language': 'en-US,en;q=0.9',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Walmart catalog returned ${response.status}`)
+    }
+
+    const html = await response.text()
+    const $ = cheerio.load(html)
+
+    items.push(
+      ...buildCatalogItems(
+        config,
+        source.sourceLabel,
+        $('[data-item-id]')
+          .map((_, element) => {
+            const card = $(element)
+            const cardText = normalizeText(card.text())
+            const priceText = normalizeText(card.find('[data-automation-id="product-price"]').first().text())
+            const priceMatch =
+              priceText.match(/current price Now \$(\d+(?:\.\d{2})?)/i)?.[1] ??
+              cardText.match(/(?:Now|From)\s+\$(\d+(?:\.\d{2})?)/i)?.[1] ??
+              cardText.match(/\$(\d+(?:\.\d{2})?)/)?.[1] ??
+              ''
+
+            return {
+              id: card.attr('data-item-id') ?? card.find('a[href*="/ip/"]').first().attr('href') ?? '',
+              title: card.find('[data-automation-id="product-title"]').first().text(),
+              price: priceMatch ? `$${normalizeCompactPrice(priceMatch)}` : '',
+              detail:
+                normalizeText(card.find('[data-automation-id="product-subtitle"]').first().text()) ||
+                normalizeText(card.find('img').first().attr('alt') ?? ''),
+              category: source.sourceLabel,
+              link: card.find('a[href*="/ip/"]').first().attr('href') ?? '',
+              image:
+                card.find('img[data-testid="productTileImage"]').first().attr('src') ??
+                card.find('img').first().attr('src') ??
+                '',
+            }
+          })
+          .get(),
+      ),
+    )
+  }
+
+  return items
+}
+
+async function scrapeKrogerCatalog() {
+  const config = stores.find((store) => store.id === 'kroger')
+  const sources = await collectKrogerCatalogSources()
+  const sourceItems = []
+
+  for (const source of sources) {
+    let listing
+
+    try {
+      listing = await scrapeKrogerListingPage(source.url)
+    } catch (error) {
+      console.warn(
+        `[kroger catalog] ${source.url}: ${error instanceof Error ? error.message : 'Unable to load listing page'}`,
+      )
+      continue
+    }
+
+    sourceItems.push(
+      ...listing.products.slice(0, source.maxItems).map((product) => ({
+        ...product,
+        sourceLabel: source.sourceLabel,
+        category: listing.title || source.sourceLabel,
+      })),
+    )
+  }
+
+  const dedupedProducts = [...new Map(sourceItems.map((product) => [product.upc, product])).values()]
+  const productsToEnrich =
+    dedupedProducts.length > 0
+      ? dedupedProducts
+      : krogerSeedProducts.map((product) => ({
+          ...product,
+          sourceLabel: 'Grocery',
+          category: 'Kroger Grocery',
+        }))
+  const enriched = (
+    await mapWithConcurrency(productsToEnrich, 6, async (product) => {
+      try {
+        return {
+          sourceLabel: product.sourceLabel,
+          ...(await fetchKrogerProduct(product)),
+        }
+      } catch (error) {
+        console.warn(
+          `[kroger catalog] ${product.upc}: ${error instanceof Error ? error.message : 'Unable to enrich product'}`,
+        )
+        return null
+      }
+    })
+  ).filter(Boolean)
+  const finalProducts = enriched.length > 0 ? enriched : krogerStaticFallbackItems
+
+  const itemsBySource = new Map()
+
+  for (const product of finalProducts) {
+    const key = product.sourceLabel || 'Grocery'
+    if (!itemsBySource.has(key)) {
+      itemsBySource.set(key, [])
+    }
+
+    itemsBySource.get(key).push({
+      id: product.id,
+      title: product.title,
+      priceValue: product.priceValue,
+      price: product.price,
+      detail: product.detail,
+      category: product.category,
+      link: product.link,
+      image: product.image,
+    })
+  }
+
+  return [...itemsBySource.entries()].flatMap(([sourceLabel, items]) => buildCatalogItems(config, sourceLabel, items))
+}
+
+export async function scrapeKrogerData() {
+  const fetchedAt = new Date().toISOString()
+  const logos = await downloadLogos()
+
+  return {
+    store: await scrapeKroger(logos.kroger ?? stores.find((store) => store.id === 'kroger').logoUrl, fetchedAt),
+    catalogItems: await scrapeKrogerCatalog(),
+    fetchedAt,
+  }
+}
+
+async function scrapeBestPriceCatalog(browser) {
+  const existingCatalog = await readExistingCatalog()
+  const tasks = [
+    ['wegmans', () => scrapeWegmansCatalog()],
+    ['aldi', () => scrapeAldiCatalog()],
+    ['lidl', () => scrapeLidlCatalog(browser)],
+    ['target', () => scrapeTargetCatalog()],
+    ['walmart', () => scrapeWalmartCatalog()],
+    ['kroger', () => scrapeKrogerCatalog()],
+  ]
+  const allItems = []
+
+  for (const [storeId, task] of tasks) {
+    try {
+      const items = await task()
+      console.log(`[catalog] ${storeId}: ${items.length} items`)
+      allItems.push(...items)
+    } catch (error) {
+      const previousItems = existingCatalog?.items?.filter((item) => item.storeId === storeId) ?? []
+      console.warn(`[catalog] ${storeId}: ${error instanceof Error ? error.message : 'Unknown catalog failure'}`)
+
+      if (previousItems.length > 0) {
+        console.log(`[catalog] ${storeId}: using ${previousItems.length} cached items`)
+        allItems.push(...previousItems)
+      }
+    }
+  }
+
+  return dedupeCatalogItems(allItems)
+}
+
 async function scrapeStore(config, browser, logoPath, fetchedAt) {
   try {
     if (config.id === 'wegmans') {
@@ -523,6 +1474,10 @@ async function scrapeStore(config, browser, logoPath, fetchedAt) {
     if (config.id === 'target') {
       return await scrapeTarget(browser, logoPath, fetchedAt)
     }
+
+    if (config.id === 'kroger') {
+      return await scrapeKroger(logoPath, fetchedAt)
+    }
   } catch (error) {
     console.warn(
       `[scrape] ${config.name}: ${error instanceof Error ? error.message : 'Unknown scrape failure'}`,
@@ -540,6 +1495,7 @@ export async function scrapeAllStores() {
 
   const fetchedAt = new Date().toISOString()
   const existingFeed = await readExistingFeed()
+  const existingCatalog = await readExistingCatalog()
   const existingStores = new Map((existingFeed?.stores ?? []).map((store) => [store.id, store]))
   const logos = await downloadLogos()
   const browser = await chromium.launch({ headless: true })
@@ -572,24 +1528,63 @@ export async function scrapeAllStores() {
     }
 
     const totalDeals = results.reduce((sum, store) => sum + store.deals.length, 0)
+    const catalogItems = await scrapeBestPriceCatalog(browser)
+    const dealCatalogItems = dedupeCatalogItems(
+      results.flatMap((store) =>
+        store.deals.map((deal) => ({
+          id: `${store.id}-${slugify(deal.title)}-deal`,
+          storeId: store.id,
+          sourceLabel: store.sourceLabel,
+          title: deal.title,
+          price: deal.price,
+          priceValue: toPriceValue(deal.price) ?? Number.POSITIVE_INFINITY,
+          detail: deal.detail,
+          category: deal.category,
+          link: deal.link,
+          image: deal.image,
+        })),
+      ),
+    ).filter((item) => Number.isFinite(item.priceValue))
 
-    if (totalDeals === 0) {
-      if (existingFeed?.stores?.length) {
-        await fs.writeFile(outputFile, `${JSON.stringify(existingFeed, null, 2)}\n`)
-        console.warn('[scrape] all live scrapes failed; preserved the existing stored feed')
-        return existingFeed
-      }
+    const payload =
+      totalDeals === 0
+        ? existingFeed?.stores?.length
+          ? existingFeed
+          : null
+        : {
+            generatedAt: fetchedAt,
+            stores: results,
+          }
 
+    if (!payload) {
       throw new Error('No deals were scraped from the configured stores.')
     }
 
-    const payload = {
-      generatedAt: fetchedAt,
-      stores: results,
+    if (totalDeals === 0) {
+      console.warn('[scrape] all live scrapes failed; preserved the existing stored feed')
     }
 
     await fs.writeFile(outputFile, `${JSON.stringify(payload, null, 2)}\n`)
     console.log(`[scrape] wrote ${outputFile}`)
+
+    const finalCatalogItems = dedupeCatalogItems([...catalogItems, ...dealCatalogItems])
+
+    if (finalCatalogItems.length > 0) {
+      const catalogPayload = {
+        generatedAt: fetchedAt,
+        itemCount: finalCatalogItems.length,
+        items: finalCatalogItems,
+      }
+
+      await fs.writeFile(catalogOutputFile, `${JSON.stringify(catalogPayload, null, 2)}\n`)
+      console.log(`[catalog] wrote ${catalogOutputFile}`)
+    } else if (existingCatalog?.items?.length) {
+      await fs.writeFile(catalogOutputFile, `${JSON.stringify(existingCatalog, null, 2)}\n`)
+      console.warn('[catalog] all live catalog scrapes failed; preserved the existing catalog feed')
+    } else {
+      throw new Error('No best-price catalog items were scraped from the configured stores.')
+    }
+
     return payload
   } finally {
     await browser.close()
