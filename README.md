@@ -1,5 +1,7 @@
 # grobots
 
+https://grobots.netlify.app/
+
 `grobots` is a local grocery-deal dashboard for Wegmans, Walmart, Aldi, Lidl, Target, and Kroger.
 It scrapes official deal pages into `public/store-data.json`, lets you track deals in the UI,
 and can send a refreshed summary to your iMessage number on a configurable schedule.
