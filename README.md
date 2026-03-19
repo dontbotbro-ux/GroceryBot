@@ -29,6 +29,31 @@ npm run notifier:service
 npm run dev
 ```
 
+## Kroger For All Visitors
+
+Kroger blocks anonymous storefront scraping from many build environments. To publish Kroger data for all users of the deployed site, set these build-time environment variables in Netlify:
+
+```bash
+KROGER_CLIENT_ID=...
+KROGER_CLIENT_SECRET=...
+KROGER_LOCATION_ID=...
+```
+
+Or use a ZIP code instead of a fixed location:
+
+```bash
+KROGER_ZIP_CODE=14618
+```
+
+Optional limits:
+
+```bash
+KROGER_API_MAX_ITEMS=6000
+KROGER_API_MAX_DEALS=1000
+```
+
+`npm run build:prod` refreshes Kroger data from the official API before Vite builds, so every visitor gets the generated Kroger results in the shipped static JSON.
+
 ## iMessage summaries
 
 - The notifier service is macOS-only and uses the local Messages app through AppleScript.

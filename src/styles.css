@@ -165,10 +165,125 @@ a {
 
 .content-shell {
   display: grid;
-  gap: 20px;
+  gap: 28px;
   max-width: 1240px;
   margin: 0 auto;
   padding: 0 20px;
+}
+
+.page-tabs {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(16px);
+  box-shadow: var(--shadow);
+}
+
+.page-tab {
+  flex: 0 0 auto;
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.page-tab:hover {
+  transform: translateY(-1px);
+  border-color: rgba(31, 74, 52, 0.14);
+  background: rgba(31, 74, 52, 0.05);
+  color: var(--ink);
+}
+
+.page-tab.is-active {
+  border-color: rgba(31, 74, 52, 0.24);
+  background: rgba(31, 74, 52, 0.1);
+  color: var(--hero-green);
+}
+
+.page-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.page-panel-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 4px 2px 0;
+}
+
+.page-panel-header h2 {
+  margin: 0;
+  font-family: 'IBM Plex Sans Condensed', sans-serif;
+  font-size: 1.45rem;
+  letter-spacing: -0.02em;
+}
+
+.page-panel-header p:last-child {
+  max-width: 40rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.section-band {
+  display: grid;
+  gap: 18px;
+  padding: 20px;
+  border: 1px solid rgba(31, 39, 31, 0.09);
+  border-radius: 32px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.64)),
+    linear-gradient(135deg, rgba(31, 74, 52, 0.05), transparent 42%);
+  box-shadow: var(--shadow);
+}
+
+.section-band-monitor {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.64)),
+    linear-gradient(135deg, rgba(233, 104, 45, 0.05), transparent 42%);
+}
+
+.band-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 2px 4px 0;
+}
+
+.band-header h2 {
+  margin: 0;
+  font-family: 'IBM Plex Sans Condensed', sans-serif;
+  font-size: 1.45rem;
+  letter-spacing: -0.02em;
+}
+
+.band-header p:last-child {
+  max-width: 34rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
 }
 
 .toolbar,
@@ -176,6 +291,7 @@ a {
 .notifier-shell,
 .watchlist-shell,
 .deals-section,
+.directory-shell,
 .store-card,
 .empty-state {
   border: 1px solid var(--line);
@@ -293,6 +409,7 @@ a {
 .watchlist-shell,
 .best-price-shell,
 .notifier-shell,
+.directory-shell,
 .deals-section {
   padding: 22px;
 }
@@ -462,6 +579,98 @@ a {
 
 .best-price-search {
   max-width: 540px;
+}
+
+.lookup-dropdown {
+  display: grid;
+  gap: 8px;
+  max-width: 720px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: var(--paper-strong);
+}
+
+.lookup-option {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+}
+
+.lookup-option-image {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  object-fit: contain;
+  background: #fff;
+  box-shadow: inset 0 0 0 1px rgba(31, 39, 31, 0.06);
+}
+
+.lookup-option:hover {
+  border-color: rgba(31, 74, 52, 0.14);
+  background: rgba(31, 74, 52, 0.05);
+}
+
+.lookup-option-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.lookup-option-copy strong {
+  font-size: 0.94rem;
+  line-height: 1.2;
+}
+
+.lookup-option-copy span,
+.lookup-option-price {
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+.lookup-option-price {
+  font-family: 'IBM Plex Sans Condensed', sans-serif;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.lookup-selection-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  max-width: 720px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--paper-strong);
+  color: var(--ink);
+  font-size: 0.82rem;
+}
+
+.lookup-clear-btn {
+  flex: none;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+}
+
+.lookup-clear-btn:hover {
+  border-color: rgba(31, 74, 52, 0.2);
+  background: rgba(31, 74, 52, 0.05);
 }
 
 .catalog-meta {
@@ -923,6 +1132,21 @@ a {
   .section-heading {
     flex-direction: column;
   }
+
+  .band-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .page-panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .lookup-option,
+  .lookup-selection-bar {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 640px) {
@@ -934,9 +1158,11 @@ a {
 
   .hero-copy,
   .metric-card,
+  .section-band,
   .best-price-shell,
   .notifier-shell,
   .watchlist-shell,
+  .directory-shell,
   .deals-section,
   .toolbar,
   .store-card,

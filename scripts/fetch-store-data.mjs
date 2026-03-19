@@ -29,6 +29,8 @@ const krogerDealSearchLinks = [
 ]
 
 const krogerGroceryCategoryLinks = [
+  '/d/shop-all-departments',
+  '/d/grocery',
   '/pl/fresh-fruits-vegetables/06',
   '/pl/fresh-fruit/06111',
   '/pl/meat-seafood/05',
@@ -50,6 +52,9 @@ const krogerSeedProducts = [
   { upc: '0007790011553', description: 'jimmy dean premium pork regular breakfast sausage roll' },
   { upc: '0001111091687', description: 'private selection campari tomatoes' },
 ]
+
+const krogerApiBaseUrl = 'https://api.kroger.com/v1'
+const krogerApiScopes = 'product.compact profile.compact'
 
 
 export const stores = [
@@ -352,6 +357,23 @@ function dedupeCatalogItems(items) {
   )
 }
 
+function buildStoreDealsFromCatalogItems(store, items) {
+  return items
+    .filter((item) => item.storeId === store.id)
+    .map((item, index) => ({
+      id: item.id || `${store.id}-${slugify(item.title)}-${index + 1}`,
+      title: normalizeText(item.title),
+      price: normalizeText(item.price),
+      previousPrice: '',
+      savings: '',
+      detail: normalizeText(item.detail ?? ''),
+      expires: '',
+      category: normalizeText(item.category || item.sourceLabel || ''),
+      link: item.link,
+      image: item.image,
+    }))
+}
+
 function buildCatalogItems(config, sourceLabel, items) {
   return items
     .map((item, index) => {
@@ -510,6 +532,181 @@ function getKrogerProductImage(images = []) {
   )
 }
 
+function getKrogerApiCredentials() {
+  const clientId = process.env.KROGER_CLIENT_ID?.trim()
+  const clientSecret = process.env.KROGER_CLIENT_SECRET?.trim()
+
+  if (!clientId || !clientSecret) {
+    return null
+  }
+
+  return {
+    clientId,
+    clientSecret,
+    locationId: process.env.KROGER_LOCATION_ID?.trim() || '',
+    zipCode: process.env.KROGER_ZIP_CODE?.trim() || '',
+    maxCatalogItems: Math.max(200, Number(process.env.KROGER_API_MAX_ITEMS || 6000)),
+    maxDealItems: Math.max(200, Number(process.env.KROGER_API_MAX_DEALS || 1000)),
+  }
+}
+
+async function fetchKrogerApiToken(credentials) {
+  const response = await fetch(`${krogerApiBaseUrl}/connect/oauth2/token`, {
+    method: 'POST',
+    headers: {
+      authorization: `Basic ${Buffer.from(`${credentials.clientId}:${credentials.clientSecret}`).toString('base64')}`,
+      'content-type': 'application/x-www-form-urlencoded',
+      'user-agent': userAgent,
+      'accept-language': 'en-US,en;q=0.9',
+    },
+    body: new URLSearchParams({
+      grant_type: 'client_credentials',
+      scope: krogerApiScopes,
+    }).toString(),
+    signal: AbortSignal.timeout(45000),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Kroger OAuth returned ${response.status}`)
+  }
+
+  const payload = await response.json()
+
+  if (!payload.access_token) {
+    throw new Error('Kroger OAuth response did not include an access token.')
+  }
+
+  return payload.access_token
+}
+
+async function fetchKrogerApiJson(pathname, token, query = {}) {
+  const url = new URL(`${krogerApiBaseUrl}${pathname}`)
+
+  for (const [key, value] of Object.entries(query)) {
+    if (value !== undefined && value !== null && String(value).length > 0) {
+      url.searchParams.set(key, String(value))
+    }
+  }
+
+  const response = await fetch(url, {
+    headers: {
+      authorization: `Bearer ${token}`,
+      accept: 'application/json',
+      'user-agent': userAgent,
+      'accept-language': 'en-US,en;q=0.9',
+    },
+    signal: AbortSignal.timeout(45000),
+  })
+
+  if (!response.ok) {
+    throw new Error(`${url}: Kroger API returned ${response.status}`)
+  }
+
+  return response.json()
+}
+
+async function resolveKrogerApiLocationId(credentials, token) {
+  if (credentials.locationId) {
+    return credentials.locationId
+  }
+
+  if (!credentials.zipCode) {
+    throw new Error('Set KROGER_LOCATION_ID or KROGER_ZIP_CODE to enable Kroger API catalog loading.')
+  }
+
+  const payload = await fetchKrogerApiJson('/locations', token, {
+    'filter.zipCode.near': credentials.zipCode,
+    'filter.limit': 1,
+  })
+  const locationId = payload.data?.[0]?.locationId
+
+  if (!locationId) {
+    throw new Error(`No Kroger location found near ZIP ${credentials.zipCode}.`)
+  }
+
+  return locationId
+}
+
+function buildKrogerApiProducts(products, sourceLabel) {
+  return products
+    .map((product) => {
+      const item = product?.items?.[0] ?? {}
+      const priceValue =
+        product?.items?.[0]?.price?.promo ?? product?.items?.[0]?.price?.regular ?? product?.price?.promo ?? product?.price?.regular
+      const title = normalizeText(product?.description ?? item?.description ?? '')
+      const upc = normalizeText(product?.upc ?? item?.upc ?? '')
+
+      if (!title || !upc || !Number.isFinite(priceValue)) {
+        return null
+      }
+
+      const regularPrice = item?.price?.regular ?? product?.price?.regular ?? null
+      return {
+        upc,
+        description: title,
+        title,
+        priceValue,
+        price: formatDollarValue(priceValue),
+        previousPrice:
+          Number.isFinite(regularPrice) && regularPrice > priceValue ? formatDollarValue(regularPrice) : '',
+        detail: normalizeText(
+          [
+            item?.brand,
+            item?.size,
+            item?.soldBy,
+          ]
+            .filter(Boolean)
+            .join(' • '),
+        ),
+        category: normalizeText(product?.categories?.[0] ?? sourceLabel),
+        link: buildKrogerProductUrl({ upc, description: title }),
+        image: getKrogerProductImage(item?.images ?? product?.images ?? []),
+        expires: '',
+        sourceLabel,
+      }
+    })
+    .filter(Boolean)
+}
+
+async function fetchKrogerProductsFromApi({ term = '', sourceLabel, maxItems }) {
+  const credentials = getKrogerApiCredentials()
+
+  if (!credentials) {
+    return null
+  }
+
+  const token = await fetchKrogerApiToken(credentials)
+  const locationId = await resolveKrogerApiLocationId(credentials, token)
+  const pageSize = 200
+  const collected = []
+  let start = 0
+
+  while (collected.length < maxItems) {
+    const payload = await fetchKrogerApiJson('/products', token, {
+      'filter.locationId': locationId,
+      'filter.limit': pageSize,
+      'filter.start': start,
+      ...(term ? { 'filter.term': term } : {}),
+    })
+
+    const pageProducts = buildKrogerApiProducts(payload.data ?? [], sourceLabel)
+
+    if (pageProducts.length === 0) {
+      break
+    }
+
+    collected.push(...pageProducts)
+
+    if ((payload.data ?? []).length < pageSize) {
+      break
+    }
+
+    start += pageSize
+  }
+
+  return collected.slice(0, maxItems)
+}
+
 function buildKrogerListingProducts(state) {
   const inlineProducts = state?.calypso?.useCases?.getProducts?.['search-grid']?.response?.data?.products ?? []
 
@@ -656,7 +853,7 @@ async function collectKrogerDealSources() {
   return searchLinks.map((href, index) => ({
     sourceLabel: index === 0 ? 'Top Deals' : 'Top Deals',
     url: absoluteUrl('https://www.kroger.com/pr/top-deals', href),
-    maxItems: 8,
+    maxItems: 400,
   }))
 }
 
@@ -665,34 +862,46 @@ async function collectKrogerCatalogSources() {
   let categoryLinks = krogerGroceryCategoryLinks
 
   try {
-    const html = await fetchHtml('https://www.kroger.com/d/grocery')
-    const $ = cheerio.load(html)
-    const extractedLinks = [...new Set(
-      $('a[href^="/pl/"]')
-        .map((_, element) => $(element).attr('href') ?? '')
-        .get()
-        .filter((href) => href && !href.includes('brandName=')),
-    )]
+    const extracted = []
+    const sourcePages = ['https://www.kroger.com/d/shop-all-departments', 'https://www.kroger.com/d/grocery']
+
+    for (const sourcePage of sourcePages) {
+      try {
+        const html = await fetchHtml(sourcePage)
+        const $ = cheerio.load(html)
+        extracted.push(
+          ...$('a[href^="/pl/"], a[href^="/d/"]')
+            .map((_, element) => $(element).attr('href') ?? '')
+            .get()
+            .filter((href) => href && !href.includes('brandName=')),
+        )
+      } catch (error) {
+        console.warn(
+          `[kroger] category source fallback: ${sourcePage}: ${error instanceof Error ? error.message : 'Unable to load category page'}`,
+        )
+      }
+    }
+
+    const extractedLinks = [...new Set(extracted)]
 
     if (extractedLinks.length > 0) {
-      categoryLinks = extractedLinks
+      categoryLinks = [...new Set([...krogerGroceryCategoryLinks, ...extractedLinks])]
     }
   } catch (error) {
     console.warn(
       `[kroger] grocery source fallback: ${error instanceof Error ? error.message : 'Unable to load grocery page'}`,
     )
-    categoryLinks = []
   }
 
   return [
-    ...categoryLinks.slice(0, 12).map((href) => ({
+    ...categoryLinks.map((href) => ({
       sourceLabel: 'Grocery',
-      url: absoluteUrl('https://www.kroger.com/d/grocery', href),
-      maxItems: 16,
+      url: absoluteUrl('https://www.kroger.com/d/shop-all-departments', href),
+      maxItems: 400,
     })),
     ...dealSources.map((source) => ({
       ...source,
-      maxItems: 10,
+      maxItems: 400,
     })),
   ]
 }
@@ -882,6 +1091,41 @@ async function scrapeTarget(browser, logoPath, fetchedAt) {
 
 async function scrapeKroger(logoPath, fetchedAt) {
   const config = stores.find((store) => store.id === 'kroger')
+  const apiCredentials = getKrogerApiCredentials()
+
+  if (apiCredentials) {
+    try {
+      const apiProducts = await fetchKrogerProductsFromApi({
+        term: 'WDDShopAllProduct26021',
+        sourceLabel: 'Top Deals',
+        maxItems: apiCredentials.maxDealItems,
+      })
+
+      if (apiProducts && apiProducts.length > 0) {
+        return buildStore(
+          config,
+          logoPath,
+          fetchedAt,
+          apiProducts.map((product) => ({
+            title: product.title,
+            price: product.price,
+            previousPrice: product.previousPrice,
+            detail: product.detail,
+            expires: product.expires,
+            link: product.link,
+            image: product.image,
+            category: product.category || 'Top Deals',
+          })),
+          {
+            rangeLabel: 'Current Kroger top deals',
+          },
+        )
+      }
+    } catch (error) {
+      console.warn(`[kroger api] deals: ${error instanceof Error ? error.message : 'Unable to load Kroger API deals'}`)
+    }
+  }
+
   const sources = await collectKrogerDealSources()
   const listingProducts = []
 
@@ -951,48 +1195,164 @@ async function scrapeKroger(logoPath, fetchedAt) {
 
 async function scrapeWalmart(logoPath, fetchedAt) {
   const config = stores.find((store) => store.id === 'walmart')
-  const response = await fetch(config.sourceUrl, {
-    headers: {
-      'user-agent': userAgent,
-      'accept-language': 'en-US,en;q=0.9',
-    },
-  })
+  const catalogItems = await scrapeWalmartCatalog()
+  const deals = catalogItems.slice(0, 120).map((item) => ({
+    title: item.title,
+    price: item.price,
+    previousPrice: '',
+    savings: '',
+    detail: item.detail,
+    link: item.link,
+    category: item.sourceLabel,
+    image: item.image,
+  }))
 
-  if (!response.ok) {
-    throw new Error(`Walmart returned ${response.status}`)
+  return buildStore(config, logoPath, fetchedAt, deals, {
+    rangeLabel: 'Current Walmart grocery listings',
+  })
+}
+
+function walmartSourceLabelFromUrl(url) {
+  try {
+    const parsed = new URL(url)
+    const pathname = parsed.pathname.toLowerCase()
+
+    if (pathname === '/c/kp/groceries-deals') {
+      return 'Groceries Deals'
+    }
+
+    if (pathname === '/cp/food/976759' || pathname === '/browse/food/976759' || pathname === '/browse/976759') {
+      return 'Food Shop All'
+    }
+
+    const rawSegment =
+      parsed.pathname
+        .split('/')
+        .reverse()
+        .find((segment) => segment && !/^\d+$/.test(segment) && !/^\d+_\d+/.test(segment)) ?? 'Food Shop All'
+
+    return rawSegment
+      .split('-')
+      .filter(Boolean)
+      .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+      .join(' ')
+  } catch {
+    return 'Food Shop All'
+  }
+}
+
+function extractWalmartLinkedUrls(html) {
+  const match = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/)
+
+  if (!match) {
+    return []
   }
 
-  const html = await response.text()
-  const $ = cheerio.load(html)
+  const data = JSON.parse(match[1])
+  const modules = data.props?.pageProps?.initialTempoData?.contentLayout?.modules ?? []
+  const urls = new Set()
 
-  const deals = $('[data-testid="item-stack"] [data-item-id]')
+  const walk = (value) => {
+    if (!value || typeof value !== 'object') {
+      return
+    }
+
+    if (Array.isArray(value)) {
+      value.forEach(walk)
+      return
+    }
+
+    for (const nested of Object.values(value)) {
+      if (typeof nested === 'string' && /^https:\/\/www\.walmart\.com\//.test(nested)) {
+        urls.add(nested)
+      }
+
+      walk(nested)
+    }
+  }
+
+  walk(modules)
+
+  const blockedPatterns = [
+    /\/account\//i,
+    /\/help\//i,
+    /recipe-results/i,
+    /alcohol/i,
+    /wine/i,
+    /gift/i,
+    /gift-card/i,
+    /flower/i,
+    /floral/i,
+    /cake/i,
+  ]
+
+  return [...urls]
+    .filter((url) => /walmart\.com\/(browse|cp|shop)\//i.test(url))
+    .filter((url) => !blockedPatterns.some((pattern) => pattern.test(url)))
+}
+
+function extractWalmartProductsFromNextData(html) {
+  const match = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/)
+
+  if (!match) {
+    return []
+  }
+
+  const data = JSON.parse(match[1])
+  const modules = data.props?.pageProps?.initialTempoData?.contentLayout?.modules ?? []
+  const products = []
+
+  for (const module of modules) {
+    const items = module?.configs?.productsConfig?.products
+
+    if (!Array.isArray(items)) {
+      continue
+    }
+
+    for (const product of items) {
+      const price =
+        product?.priceInfo?.linePriceDisplay ??
+        product?.priceInfo?.linePrice ??
+        product?.priceInfo?.itemPrice ??
+        product?.price?.priceString ??
+        product?.price?.displayPrice ??
+        ''
+
+      products.push({
+        id: product?.id ?? product?.usItemId ?? '',
+        title: product?.name ?? product?.productName ?? '',
+        price,
+        detail: [product?.brand ?? '', product?.salesUnitType ?? '', product?.unitQuantity ?? ''].filter(Boolean).join(' • '),
+        link: product?.canonicalUrl ?? '',
+        image: product?.imageInfo?.thumbnailUrl ?? product?.image ?? '',
+      })
+    }
+  }
+
+  return products
+}
+
+function extractWalmartCatalogProducts(html) {
+  const $ = cheerio.load(html)
+  const products = $('[data-item-id]')
     .map((_, element) => {
       const card = $(element)
-      const title = normalizeText(card.find('[data-automation-id="product-title"]').first().text())
       const cardText = normalizeText(card.text())
       const priceText = normalizeText(card.find('[data-automation-id="product-price"]').first().text())
       const priceMatch =
         priceText.match(/current price Now \$(\d+(?:\.\d{2})?)/i)?.[1] ??
         cardText.match(/(?:Now|From)\s+\$(\d+(?:\.\d{2})?)/i)?.[1] ??
         cardText.match(/\$(\d+(?:\.\d{2})?)/)?.[1] ??
-        priceText.match(/(?:Now|From)\$([0-9]+)/i)?.[1] ??
         ''
-      const previousPrice = cardText.match(/Was\s*\$(\d+(?:\.\d{2})?)/i)?.[1] ?? ''
-      const link = card.find('a[href*="/ip/"]').first().attr('href') ?? ''
-      const unit = cardText.match(/\d+(?:\.\d+)?\s*(?:¢|c)\/(?:lb|oz|ea|each)\b/i)?.[0] ?? ''
-      const savings =
-        previousPrice && priceMatch
-          ? `Save $${Math.max(Number(previousPrice) - Number(normalizeCompactPrice(priceMatch)), 0).toFixed(2)}`
-          : ''
 
       return {
-        title,
+        id: card.attr('data-item-id') ?? card.find('a[href*="/ip/"]').first().attr('href') ?? '',
+        title: card.find('[data-automation-id="product-title"]').first().text(),
         price: priceMatch ? `$${normalizeCompactPrice(priceMatch)}` : '',
-        previousPrice: previousPrice ? `$${previousPrice}` : '',
-        savings,
-        detail: unit,
-        link,
-        category: cardText.includes('Rollback') ? 'Rollback' : 'Groceries deal',
+        detail:
+          normalizeText(card.find('[data-automation-id="product-subtitle"]').first().text()) ||
+          normalizeText(card.find('img').first().attr('alt') ?? ''),
+        link: card.find('a[href*="/ip/"]').first().attr('href') ?? '',
         image:
           card.find('img[data-testid="productTileImage"]').first().attr('src') ??
           card.find('img').first().attr('src') ??
@@ -1001,9 +1361,54 @@ async function scrapeWalmart(logoPath, fetchedAt) {
     })
     .get()
 
-  return buildStore(config, logoPath, fetchedAt, deals, {
-    rangeLabel: 'Current Walmart grocery deals',
-  })
+  return [...products, ...extractWalmartProductsFromNextData(html)]
+}
+
+async function collectWalmartCatalogSources() {
+  const baseSources = [
+    {
+      url: 'https://www.walmart.com/c/kp/groceries-deals',
+      sourceLabel: 'Groceries Deals',
+      priority: 0,
+    },
+    {
+      url: 'https://www.walmart.com/cp/food/976759?povid=GlobalNav_rWeb_Grocery_GroceryShopAll',
+      sourceLabel: 'Food Shop All',
+      priority: 1,
+    },
+  ]
+  const baseHtml = await fetchHtml(baseSources[1].url)
+  const linkedUrls = extractWalmartLinkedUrls(baseHtml)
+  const sourceMap = new Map(baseSources.map((source) => [source.url, source]))
+
+  for (const url of linkedUrls) {
+    if (sourceMap.has(url)) {
+      continue
+    }
+
+    const pathname = new URL(url).pathname.toLowerCase()
+    let priority = 20
+
+    if (/^\/cp\/(pantry|meat-seafood|frozen-foods|fresh-produce|snacks-cookies-chips|beverages|deli|breakfast-cereal|dairy-eggs|bakery-bread|coffee|candy|baking)\//.test(pathname)) {
+      priority = 2
+    } else if (/^\/browse\/food\//.test(pathname)) {
+      priority = 6
+    } else if (/^\/cp\//.test(pathname)) {
+      priority = 8
+    } else if (/^\/shop\//.test(pathname)) {
+      priority = 10
+    }
+
+    sourceMap.set(url, {
+      url,
+      sourceLabel: walmartSourceLabelFromUrl(url),
+      priority,
+    })
+  }
+
+  return [...sourceMap.values()]
+    .sort((left, right) => left.priority - right.priority || left.url.localeCompare(right.url))
+    .slice(0, 18)
 }
 
 async function scrapeWegmansCatalog() {
@@ -1339,73 +1744,70 @@ async function scrapeTargetCatalog() {
 
 async function scrapeWalmartCatalog() {
   const config = stores.find((store) => store.id === 'walmart')
-  const urls = [
-    {
-      url: 'https://www.walmart.com/c/kp/groceries-deals',
-      sourceLabel: 'Groceries Deals',
-    },
-    {
-      url: 'https://www.walmart.com/cp/food/976759?povid=GlobalNav_rWeb_Grocery_GroceryShopAll',
-      sourceLabel: 'Food Shop All',
-    },
-  ]
-  const items = []
-
-  for (const source of urls) {
-    const response = await fetch(source.url, {
-      headers: {
-        'user-agent': userAgent,
-        'accept-language': 'en-US,en;q=0.9',
-      },
-    })
-
-    if (!response.ok) {
-      throw new Error(`Walmart catalog returned ${response.status}`)
+  const sources = await collectWalmartCatalogSources()
+  const sourceItems = await mapWithConcurrency(sources, 4, async (source) => {
+    try {
+      const html = await fetchHtml(source.url)
+      return buildCatalogItems(config, source.sourceLabel, extractWalmartCatalogProducts(html))
+    } catch (error) {
+      console.warn(`[walmart catalog] ${source.url}: ${error instanceof Error ? error.message : 'Unable to load page'}`)
+      return []
     }
+  })
 
-    const html = await response.text()
-    const $ = cheerio.load(html)
-
-    items.push(
-      ...buildCatalogItems(
-        config,
-        source.sourceLabel,
-        $('[data-item-id]')
-          .map((_, element) => {
-            const card = $(element)
-            const cardText = normalizeText(card.text())
-            const priceText = normalizeText(card.find('[data-automation-id="product-price"]').first().text())
-            const priceMatch =
-              priceText.match(/current price Now \$(\d+(?:\.\d{2})?)/i)?.[1] ??
-              cardText.match(/(?:Now|From)\s+\$(\d+(?:\.\d{2})?)/i)?.[1] ??
-              cardText.match(/\$(\d+(?:\.\d{2})?)/)?.[1] ??
-              ''
-
-            return {
-              id: card.attr('data-item-id') ?? card.find('a[href*="/ip/"]').first().attr('href') ?? '',
-              title: card.find('[data-automation-id="product-title"]').first().text(),
-              price: priceMatch ? `$${normalizeCompactPrice(priceMatch)}` : '',
-              detail:
-                normalizeText(card.find('[data-automation-id="product-subtitle"]').first().text()) ||
-                normalizeText(card.find('img').first().attr('alt') ?? ''),
-              category: source.sourceLabel,
-              link: card.find('a[href*="/ip/"]').first().attr('href') ?? '',
-              image:
-                card.find('img[data-testid="productTileImage"]').first().attr('src') ??
-                card.find('img').first().attr('src') ??
-                '',
-            }
-          })
-          .get(),
-      ),
-    )
-  }
-
-  return items
+  return sourceItems.flat()
 }
 
 async function scrapeKrogerCatalog() {
   const config = stores.find((store) => store.id === 'kroger')
+  const apiCredentials = getKrogerApiCredentials()
+
+  if (apiCredentials) {
+    try {
+      const [catalogProducts, dealProducts] = await Promise.all([
+        fetchKrogerProductsFromApi({
+          sourceLabel: 'All Departments',
+          maxItems: apiCredentials.maxCatalogItems,
+        }),
+        fetchKrogerProductsFromApi({
+          term: 'WDDShopAllProduct26021',
+          sourceLabel: 'Top Deals',
+          maxItems: apiCredentials.maxDealItems,
+        }),
+      ])
+      const apiProducts = [...(catalogProducts ?? []), ...(dealProducts ?? [])]
+
+      if (apiProducts.length > 0) {
+        const itemsBySource = new Map()
+
+        for (const product of apiProducts) {
+          const key = product.sourceLabel || 'Grocery'
+
+          if (!itemsBySource.has(key)) {
+            itemsBySource.set(key, [])
+          }
+
+          itemsBySource.get(key).push({
+            id: product.upc,
+            title: product.title,
+            priceValue: product.priceValue,
+            price: product.price,
+            detail: product.detail,
+            category: product.category,
+            link: product.link,
+            image: product.image,
+          })
+        }
+
+        return [...itemsBySource.entries()].flatMap(([sourceLabel, items]) => buildCatalogItems(config, sourceLabel, items))
+      }
+    } catch (error) {
+      console.warn(
+        `[kroger api] catalog: ${error instanceof Error ? error.message : 'Unable to load Kroger API catalog'}`,
+      )
+    }
+  }
+
   const sources = await collectKrogerCatalogSources()
   const sourceItems = []
 
@@ -1616,28 +2018,44 @@ export async function scrapeAllStores() {
       ),
     ).filter((item) => Number.isFinite(item.priceValue))
 
+    const finalCatalogItems = dedupeCatalogItems([...catalogItems, ...dealCatalogItems])
+
+    const expandedResults = results.map((store) => {
+      const catalogDeals = buildStoreDealsFromCatalogItems(store, finalCatalogItems)
+
+      if (catalogDeals.length <= store.deals.length) {
+        return store
+      }
+
+      return {
+        ...store,
+        status: 'ok',
+        deals: catalogDeals,
+        rangeLabel: `Current ${store.name} catalog listings`,
+      }
+    })
+
+    const expandedTotalDeals = expandedResults.reduce((sum, store) => sum + store.deals.length, 0)
     const payload =
-      totalDeals === 0
+      expandedTotalDeals === 0
         ? existingFeed?.stores?.length
           ? existingFeed
           : null
         : {
             generatedAt: fetchedAt,
-            stores: results,
+            stores: expandedResults,
           }
 
     if (!payload) {
       throw new Error('No deals were scraped from the configured stores.')
     }
 
-    if (totalDeals === 0) {
+    if (expandedTotalDeals === 0) {
       console.warn('[scrape] all live scrapes failed; preserved the existing stored feed')
     }
 
     await fs.writeFile(outputFile, `${JSON.stringify(payload, null, 2)}\n`)
     console.log(`[scrape] wrote ${outputFile}`)
-
-    const finalCatalogItems = dedupeCatalogItems([...catalogItems, ...dealCatalogItems])
 
     if (finalCatalogItems.length > 0) {
       const catalogPayload = {

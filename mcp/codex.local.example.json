@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "grobots-local-imessage": {
+      "command": "node",
+      "args": [
+        "/Users/swaq/Downloads/grobots/scripts/grocery-imessage-mcp.mjs"
+      ],
+      "cwd": "/Users/swaq/Downloads/grobots"
+    }
+  }
+}

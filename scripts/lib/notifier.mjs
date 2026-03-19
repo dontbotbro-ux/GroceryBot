@@ -14,6 +14,7 @@ const feedFile = path.join(rootDir, 'public', 'store-data.json')
 const runnerPath = path.join(rootDir, 'scripts', 'run-summary-job.mjs')
 const launchAgentLabel = 'com.grobots.deal-summary'
 const launchAgentPath = path.join(os.homedir(), 'Library', 'LaunchAgents', `${launchAgentLabel}.plist`)
+const messagesDbPath = path.join(os.homedir(), 'Library', 'Messages', 'chat.db')
 
 const validStoreIds = storeCatalog.map((store) => store.id)
 const weekdayMap = {
@@ -30,6 +31,29 @@ const weekdayOrder = Object.keys(weekdayMap)
 
 function supportsMessagesAutomation() {
   return process.platform === 'darwin'
+}
+
+function runAppleScript(script, args = []) {
+  return spawnSync('osascript', ['-', ...args], {
+    input: script,
+    encoding: 'utf8',
+  })
+}
+
+function buildPermissionInstructions() {
+  return [
+    '1. Open System Settings.',
+    '2. Go to Privacy & Security > Full Disk Access.',
+    `3. Enable Full Disk Access for your terminal app (${path.basename(process.env.SHELL || 'Terminal')}) or the app running notifier:service.`,
+    '4. Go to Privacy & Security > Automation.',
+    `5. Allow your terminal app or Node.js to control "Messages".`,
+    '6. If you plan to use compose-window fallback delivery, also enable Privacy & Security > Accessibility for your terminal app.',
+    '7. Restart `npm run notifier:service` after changing permissions.',
+    'Helpful commands:',
+    '  open "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles"',
+    '  open "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation"',
+    '  open "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"',
+  ].join('\n')
 }
 
 function formatTimestamp(value) {
@@ -196,6 +220,87 @@ export function buildStatusPayload(settings, extra = {}) {
     scheduleDescription: buildScheduleDescription(settings),
     launchAgentPath,
     ...extra,
+  }
+}
+
+export async function runNotifierDiagnostics() {
+  const instructions = buildPermissionInstructions()
+
+  if (!supportsMessagesAutomation()) {
+    return {
+      platform: process.platform,
+      supportsMessagesAutomation: false,
+      fullDiskAccess: {
+        ok: false,
+        detail: 'Diagnostics are only available on macOS.',
+      },
+      automation: {
+        ok: false,
+        detail: 'Messages automation is only available on macOS.',
+      },
+      accessibility: {
+        ok: false,
+        detail: 'System Events fallback is only available on macOS.',
+      },
+      instructions,
+    }
+  }
+
+  let fullDiskAccess = {
+    ok: false,
+    detail: '',
+  }
+
+  try {
+    const handle = await fs.open(messagesDbPath, 'r')
+    await handle.close()
+    fullDiskAccess = {
+      ok: true,
+      detail: `Readable: ${messagesDbPath}`,
+    }
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to access the Messages database.'
+    fullDiskAccess = {
+      ok: false,
+      detail: `${messagesDbPath}: ${message}`,
+    }
+  }
+
+  const automationProbe = runAppleScript(`tell application "Messages"
+  activate
+  get name of first service
+end tell`)
+  const automationOutput = automationProbe.stderr.trim() || automationProbe.stdout.trim()
+  const automation = {
+    ok: automationProbe.status === 0,
+    detail: automationProbe.status === 0 ? 'Apple Events access to Messages succeeded.' : automationOutput || 'Messages automation probe failed.',
+  }
+
+  const accessibilityProbe = runAppleScript(`tell application "System Events"
+  tell process "Messages"
+    return true
+  end tell
+end tell`)
+  const accessibilityOutput = accessibilityProbe.stderr.trim() || accessibilityProbe.stdout.trim()
+  const accessibility = {
+    ok: accessibilityProbe.status === 0,
+    detail:
+      accessibilityProbe.status === 0
+        ? 'System Events can address the Messages process.'
+        : accessibilityOutput || 'System Events accessibility probe failed.',
+  }
+
+  return {
+    platform: process.platform,
+    supportsMessagesAutomation: true,
+    fullDiskAccess,
+    automation,
+    accessibility,
+    ok: fullDiskAccess.ok && automation.ok,
+    instructions:
+      fullDiskAccess.ok && automation.ok && accessibility.ok
+        ? 'All required local permissions appear to be enabled.'
+        : instructions,
   }
 }
 
@@ -397,15 +502,53 @@ export function sendIMessage(phoneNumber, message) {
   const script = `on run argv
 set targetPhone to item 1 of argv
 set messageText to item 2 of argv
-tell application "Messages"
-  set targetService to 1st service whose service type = iMessage
-  set targetParticipant to participant targetPhone of targetService
-  send messageText to targetParticipant
-end tell
+try
+  my sendViaMessagesModel(targetPhone, messageText)
+on error
+  my sendViaComposeWindow(targetPhone, messageText)
+end try
 end run`
 
+  const fullScript = `${script}
+
+on sendViaMessagesModel(targetPhone, messageText)
+  tell application "Messages"
+    activate
+    set targetService to 1st service whose service type = iMessage
+    set targetParticipant to participant targetPhone of targetService
+    try
+      send messageText to targetParticipant
+      return
+    on error
+      set targetChat to make new text chat with properties {service:targetService, participants:{targetParticipant}}
+      send messageText to targetChat
+    end try
+  end tell
+end sendViaMessagesModel
+
+on sendViaComposeWindow(targetPhone, messageText)
+  tell application "Messages" to activate
+  delay 0.6
+
+  tell application "System Events"
+    tell process "Messages"
+      keystroke "n" using command down
+      delay 0.8
+      keystroke targetPhone
+      delay 0.8
+      key code 36
+      delay 0.8
+      keystroke tab
+      delay 0.4
+      keystroke messageText
+      delay 0.4
+      key code 36
+    end tell
+  end tell
+end sendViaComposeWindow`
+
   const result = spawnSync('osascript', ['-', phoneNumber, message], {
-    input: script,
+    input: fullScript,
     encoding: 'utf8',
   })
 

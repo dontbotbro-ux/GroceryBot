@@ -10,16 +10,22 @@
     "dev": "vite",
     "dev:full": "node scripts/dev-all.mjs",
     "build:app": "tsc -b && vite build",
+    "build:prod": "node scripts/refresh-kroger-data.mjs && npm run build:app",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "mcp:grocery-imessage": "node scripts/grocery-imessage-mcp.mjs",
+    "notifier:diagnostics": "node scripts/notifier-diagnostics.mjs",
     "notifier:service": "node scripts/notifier-service.mjs",
     "send:summary": "node scripts/run-summary-job.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "axios": "^1.13.6",
     "cheerio": "^1.2.0",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
