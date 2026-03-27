@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useDeferredValue, useEffect, useState, type CSSProperties } from 'react'
 
 type Deal = {
   id: string
@@ -33,26 +33,91 @@ type StoreFeed = {
   stores: StoreData[]
 }
 
-type BestPriceItem = {
-  id: string
+type LookupMatch = {
   storeId: string
-  sourceLabel: string
   title: string
   price: string
   priceValue: number
+  sourceLabel: string
   detail?: string
-  category?: string
   link?: string
-  image?: string
 }
 
-type BestPriceFeed = {
+type LookupOption = {
+  key: string
+  title: string
+  detail: string
+  image?: string
+  primaryStoreId: string
+  searchTokens: string[]
+  minPrice: number
+  minPriceLabel: string
+  storeCount: number
+  matches: LookupMatch[]
+}
+
+type LookupMeta = {
   generatedAt: string
   itemCount: number
-  items: BestPriceItem[]
+  optionCount: number
+  comparableOptionCount: number
+  lowestPrice: number | null
+  shards: Array<{
+    key: string
+    optionCount: number
+  }>
 }
 
-type AppPage = 'deals' | 'lookup' | 'summary' | 'watchlist'
+type LookupShard = {
+  generatedAt: string
+  shardKey: string
+  optionCount: number
+  options: LookupOption[]
+}
+
+type SourceIntelStore = {
+  id: string
+  name: string
+  logo: string
+  theme: string
+  sourceUrl: string
+  sourceLabel: string
+  officialTitle: string
+  officialSummary: string
+  officialCount: number | null
+  officialSignal: string
+  indexedCount: number
+  liveFeedCount: number
+  coveragePercent: number | null
+  coverageGap: number
+  status: 'synced' | 'watch' | 'partial'
+  statusLabel: string
+  statusReason: string
+  highlights: string[]
+  sourceWindow: string
+  snapshottedAt: string
+}
+
+type SourceIntel = {
+  generatedAt: string
+  feedGeneratedAt: string
+  catalogGeneratedAt: string
+  overview: {
+    storesTracked: number
+    storesWithSignals: number
+    storesNeedingAttention: number
+    totalCatalogItems: number
+    comparableOptionCount: number
+    largestCoverageGap: {
+      storeId: string
+      name: string
+      gap: number
+    } | null
+  }
+  stores: SourceIntelStore[]
+}
+
+type AppPage = 'command' | 'deals' | 'lookup' | 'summary' | 'watchlist'
 
 type ScheduleType = 'daily' | 'weekly'
 type SummaryMode = 'all' | 'tracked'
@@ -87,7 +152,67 @@ type NotifierResponse = {
 const WATCHLIST_KEY = 'grobots-watchlist-v1'
 const NOTIFIER_API = 'http://127.0.0.1:8787/api'
 const SUMMARY_SEND_API = 'http://localhost:3000/send-summary'
+const LOOKUP_META_API = '/lookup/meta.json'
+const LOOKUP_SHARD_DIR = '/lookup/shards'
+const SOURCE_INTEL_API = '/source-intel.json'
 const EMPTY_STORES: StoreData[] = []
+const LOOKUP_STOPWORDS = new Set([
+  'a',
+  'an',
+  'and',
+  'brand',
+  'by',
+  'classic',
+  'each',
+  'family',
+  'for',
+  'form',
+  'fresh',
+  'good',
+  'gather',
+  'large',
+  'organic',
+  'original',
+  'pack',
+  'packs',
+  'pk',
+  'premium',
+  'regular',
+  'sold',
+  'style',
+  'the',
+  'value',
+])
+const LOOKUP_UNIT_TOKENS = new Set([
+  'ct',
+  'count',
+  'ea',
+  'fl',
+  'gal',
+  'gallon',
+  'gallons',
+  'gm',
+  'grams',
+  'kg',
+  'l',
+  'lb',
+  'lbs',
+  'liter',
+  'liters',
+  'ml',
+  'ounce',
+  'ounces',
+  'oz',
+  'pack',
+  'packs',
+  'pint',
+  'pints',
+  'pk',
+  'pt',
+  'qt',
+  'quart',
+  'quarts',
+])
 const WEEKDAYS: Array<{ id: Weekday; label: string }> = [
   { id: 'SUN', label: 'Sun' },
   { id: 'MON', label: 'Mon' },
@@ -147,17 +272,6 @@ function formatTimestamp(value: string): string {
   }).format(date)
 }
 
-function parsePriceValue(value: string): number | null {
-  const match = value.replace(/,/g, '').match(/(\d+(?:\.\d+)?)/)
-
-  if (!match) {
-    return null
-  }
-
-  const parsed = Number(match[1])
-  return Number.isFinite(parsed) ? parsed : null
-}
-
 function normalizeLookupText(value = ''): string {
   return value
     .toLowerCase()
@@ -178,147 +292,91 @@ function singularizeLookupToken(token: string): string {
   return token
 }
 
-function extractLookupBrand(detail = ''): string[] {
-  const segments = detail
-    .split('•')
-    .map((segment) => normalizeLookupText(segment))
-    .filter(Boolean)
-    .filter((segment) => !/\d/.test(segment))
-    .filter((segment) => !/\b(oz|lb|ct|count|each|per|form)\b/.test(segment))
-
-  const brandSegment = segments.at(-1) ?? ''
-  return brandSegment.split(' ').filter(Boolean)
-}
-
 function normalizeLookupCountToken(token: string): string {
-  if (token === 'dozen') {
-    return '12ct'
-  }
-
-  return token
+  return token === 'dozen' ? '12ct' : token
 }
 
-function isShellEggItem(item: Pick<BestPriceItem, 'title' | 'detail' | 'category' | 'sourceLabel'>): boolean {
-  const title = normalizeLookupText(item.title)
-  const category = normalizeLookupText(item.category ?? '')
-  const sourceLabel = normalizeLookupText(item.sourceLabel ?? '')
-  const detail = normalizeLookupText(item.detail ?? '')
-  const combined = [title, category, sourceLabel, detail].join(' ')
-
-  if (!/\begg\b/.test(combined)) {
-    return false
-  }
-
-  if (/\b(cadbury|candy|chocolate|easter|snickers|soup|noodle|yogurt|waffle|muffin|salad|roll|bite|sandwich)\b/.test(combined)) {
-    return false
-  }
-
-  return /\b(grade|large|brown|white|cage|free range|free-run|dozen|ct|count|egg)\b/.test(combined)
-}
-
-function buildLookupMatchText(
-  item: Pick<BestPriceItem, 'title' | 'detail' | 'category' | 'sourceLabel'>,
-  includeDetail: boolean,
-): string {
-  const parts = [item.title, item.category, item.sourceLabel]
-
-  if (includeDetail) {
-    const sanitizedDetail = normalizeLookupText(item.detail ?? '')
-      .replace(/\bcontains\b.*$/i, '')
-      .replace(/\bdietary needs\b.*$/i, '')
-      .replace(/\bselect this exact item\b.*$/i, '')
-      .trim()
-
-    if (sanitizedDetail) {
-      parts.push(sanitizedDetail)
-    }
-  }
-
-  return normalizeLookupText(parts.filter(Boolean).join(' '))
-}
-
-function buildLookupOptionKey(item: Pick<BestPriceItem, 'title' | 'detail' | 'category'>): string {
-  if (isShellEggItem({ ...item, sourceLabel: '' })) {
-    return 'shell eggs'
-  }
-
-  const stopwords = new Set([
-    'a',
-    'an',
-    'and',
-    'brand',
-    'by',
-    'classic',
-    'family',
-    'each',
-    'fresh',
-    'for',
-    'form',
-    'friendly',
-    'gather',
-    'good',
-    'large',
-    'original',
-    'organic',
-    'pack',
-    'pk',
-    'premium',
-    'regular',
-    'sold',
-    'style',
-    'the',
-    'value',
-  ])
-  const unitTokens = new Set([
-    'ct',
-    'count',
-    'ea',
-    'fl',
-    'gal',
-    'gallon',
-    'gallons',
-    'gm',
-    'grams',
-    'kg',
-    'lb',
-    'lbs',
-    'liter',
-    'liters',
-    'l',
-    'ml',
-    'oz',
-    'ounce',
-    'ounces',
-    'pack',
-    'packs',
-    'pk',
-    'pt',
-    'pint',
-    'pints',
-    'qt',
-    'quart',
-    'quarts',
-  ])
-  const brandTokens = new Set(extractLookupBrand(item.detail))
-  const tokens = normalizeLookupText(item.title)
-    .split(' ')
+function buildLookupQueryTokens(value = ''): string[] {
+  return normalizeLookupText(value)
+    .split(/\s+/)
     .filter(Boolean)
-    .filter((token) => !stopwords.has(token))
-    .filter((token) => !brandTokens.has(token))
-    .filter((token) => {
-      if (unitTokens.has(token)) {
-        return false
-      }
-
-      if (/^\d+(?:\.\d+)?$/.test(token)) {
-        return false
-      }
-
-      return true
-    })
     .map((token) => normalizeLookupCountToken(singularizeLookupToken(token)))
+    .filter((token) => !LOOKUP_STOPWORDS.has(token))
+    .filter((token) => !LOOKUP_UNIT_TOKENS.has(token))
+    .filter((token) => !/^\d+(?:\.\d+)?$/.test(token))
+}
 
-  return tokens.join(' ')
+function getLookupShardKey(token = ''): string {
+  const normalized = normalizeLookupText(token)
+
+  if (!normalized) {
+    return 'misc'
+  }
+
+  const firstCharacter = normalized[0]
+  return /[a-z0-9]/.test(firstCharacter) ? firstCharacter : 'misc'
+}
+
+function dealQualityScore(deal: Deal): number {
+  let score = 0
+
+  if (deal.link) {
+    score += 4
+  }
+
+  if (deal.image) {
+    score += 3
+  }
+
+  if (deal.previousPrice) {
+    score += 2
+  }
+
+  if (deal.savings) {
+    score += 2
+  }
+
+  if (deal.expires) {
+    score += 1
+  }
+
+  score += Math.min((deal.detail || '').trim().length, 80) / 80
+  return score
+}
+
+function dedupeDealCards(deals: Deal[]): Deal[] {
+  const byKey = new Map<string, Deal>()
+
+  for (const deal of deals) {
+    const normalizedTitle = deal.title.trim().toLowerCase()
+    const normalizedPrice = deal.price.trim().toLowerCase()
+    const key = `${normalizedTitle}::${normalizedPrice}`
+    const current = byKey.get(key)
+
+    if (!current) {
+      byKey.set(key, deal)
+      continue
+    }
+
+    const currentScore = dealQualityScore(current)
+    const candidateScore = dealQualityScore(deal)
+    const preferred = candidateScore > currentScore ? deal : current
+    const fallback = preferred === deal ? current : deal
+
+    byKey.set(key, {
+      ...fallback,
+      ...preferred,
+      previousPrice: preferred.previousPrice || fallback.previousPrice,
+      savings: preferred.savings || fallback.savings,
+      detail: preferred.detail || fallback.detail,
+      expires: preferred.expires || fallback.expires,
+      category: preferred.category || fallback.category,
+      link: preferred.link || fallback.link,
+      image: preferred.image || fallback.image,
+    })
+  }
+
+  return [...byKey.values()]
 }
 
 function buildSearchHaystack(store: StoreData, deal: Deal): string {
@@ -357,7 +415,7 @@ function buildDealSummary(feed: StoreFeed, storeIds: string[]): string {
   const sections = feed.stores
     .filter((store) => (selectedStoreIds ? selectedStoreIds.has(store.id) : true))
     .map((store) => {
-      const deals = store.deals.slice(0, 3)
+      const deals = dedupeDealCards(store.deals).slice(0, 3)
 
       if (deals.length === 0) {
         return ''
@@ -405,14 +463,18 @@ async function apiRequest<T>(pathname: string, options?: RequestInit): Promise<T
 
 export default function App() {
   const [feed, setFeed] = useState<StoreFeed | null>(null)
+  const [sourceIntel, setSourceIntel] = useState<SourceIntel | null>(null)
+  const [sourceIntelLoading, setSourceIntelLoading] = useState(true)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [activePage, setActivePage] = useState<AppPage>('deals')
+  const [activePage, setActivePage] = useState<AppPage>('command')
   const [search, setSearch] = useState('')
   const [bestPriceQuery, setBestPriceQuery] = useState('')
   const [bestPriceSelection, setBestPriceSelection] = useState('')
-  const [bestPriceFeed, setBestPriceFeed] = useState<BestPriceFeed | null>(null)
-  const [bestPriceLoading, setBestPriceLoading] = useState(false)
+  const [lookupMeta, setLookupMeta] = useState<LookupMeta | null>(null)
+  const [lookupMetaLoading, setLookupMetaLoading] = useState(false)
+  const [lookupShards, setLookupShards] = useState<Record<string, LookupOption[]>>({})
+  const [lookupShardLoading, setLookupShardLoading] = useState(false)
   const [bestPriceError, setBestPriceError] = useState('')
   const [activeStore, setActiveStore] = useState('all')
   const [watchOnly, setWatchOnly] = useState(false)
@@ -467,6 +529,41 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    let cancelled = false
+
+    async function loadSourceIntel() {
+      try {
+        setSourceIntelLoading(true)
+        const response = await fetch(SOURCE_INTEL_API, { cache: 'no-store' })
+
+        if (!response.ok) {
+          throw new Error(`Failed to load source intelligence (${response.status})`)
+        }
+
+        const data = (await response.json()) as SourceIntel
+
+        if (!cancelled) {
+          setSourceIntel(data)
+        }
+      } catch {
+        if (!cancelled) {
+          setSourceIntel(null)
+        }
+      } finally {
+        if (!cancelled) {
+          setSourceIntelLoading(false)
+        }
+      }
+    }
+
+    void loadSourceIntel()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
     window.localStorage.setItem(WATCHLIST_KEY, JSON.stringify(watchlist))
   }, [watchlist])
 
@@ -502,6 +599,12 @@ export default function App() {
   }, [])
 
   const stores = feed?.stores ?? EMPTY_STORES
+  const displayStores = stores.map((store) => ({
+    ...store,
+    deals: dedupeDealCards(store.deals),
+  }))
+  const sourceIntelStores = sourceIntel?.stores ?? []
+  const sourceIntelById = new Map(sourceIntelStores.map((store) => [store.id, store]))
 
   useEffect(() => {
     if (stores.length === 0) {
@@ -538,58 +641,119 @@ export default function App() {
   }, [notifierOnline, watchlist])
 
   const normalizedQuery = search.trim().toLowerCase()
-  const bestPriceTokens = bestPriceQuery
-    .trim()
-    .toLowerCase()
-    .split(/\s+/)
-    .filter(Boolean)
-  const isEggLookup =
-    bestPriceTokens.length === 1 && singularizeLookupToken(bestPriceTokens[0]) === 'egg'
-  const storesById = new Map(stores.map((store) => [store.id, store]))
+  const deferredBestPriceQuery = useDeferredValue(bestPriceQuery)
+  const normalizedBestPriceQuery = normalizeLookupText(deferredBestPriceQuery)
+  const bestPriceTokens = buildLookupQueryTokens(deferredBestPriceQuery)
+  const bestPriceLoading = lookupMetaLoading || lookupShardLoading
+  const storesById = new Map(displayStores.map((store) => [store.id, store]))
+  const requiredLookupShardKeys = bestPriceTokens.length > 0 ? [...new Set(bestPriceTokens.map(getLookupShardKey))] : []
+  const requiredLookupShardSignature = requiredLookupShardKeys.join('|')
 
   useEffect(() => {
-    if (bestPriceFeed || bestPriceLoading || bestPriceError) {
+    if (lookupMeta || bestPriceError) {
       return
     }
 
     let cancelled = false
 
-    async function loadBestPriceFeed() {
+    async function loadLookupMeta() {
       try {
-        setBestPriceLoading(true)
-        const response = await fetch('/best-price-data.json')
+        setLookupMetaLoading(true)
+        const response = await fetch(LOOKUP_META_API, { cache: 'force-cache' })
 
         if (!response.ok) {
-          throw new Error(`Failed to load best-price catalog (${response.status})`)
+          throw new Error(`Failed to load lookup metadata (${response.status})`)
         }
 
-        const data = (await response.json()) as BestPriceFeed
+        const data = (await response.json()) as LookupMeta
 
         if (!cancelled) {
-          setBestPriceFeed(data)
+          setLookupMeta(data)
           setBestPriceError('')
         }
       } catch (loadError) {
         if (!cancelled) {
           setBestPriceError(
-            loadError instanceof Error ? loadError.message : 'Unable to load the best-price catalog.',
+            loadError instanceof Error ? loadError.message : 'Unable to load the lookup metadata.',
           )
         }
       } finally {
         if (!cancelled) {
-          setBestPriceLoading(false)
+          setLookupMetaLoading(false)
         }
       }
     }
 
-    void loadBestPriceFeed()
+    void loadLookupMeta()
 
     return () => {
       cancelled = true
     }
-  }, [bestPriceError, bestPriceFeed, bestPriceLoading])
+  }, [bestPriceError, lookupMeta])
 
-  const filteredStores = stores
+  useEffect(() => {
+    if (!lookupMeta || !requiredLookupShardSignature) {
+      return
+    }
+
+    const requestedShardKeys = requiredLookupShardSignature.split('|').filter(Boolean)
+    const missingShardKeys = requestedShardKeys.filter((shardKey) => !lookupShards[shardKey])
+
+    if (missingShardKeys.length === 0) {
+      return
+    }
+
+    let cancelled = false
+
+    async function loadLookupShards() {
+      try {
+        setLookupShardLoading(true)
+        const loadedShards = await Promise.all(
+          missingShardKeys.map(async (shardKey) => {
+            const response = await fetch(`${LOOKUP_SHARD_DIR}/${shardKey}.json`, { cache: 'force-cache' })
+
+            if (!response.ok) {
+              throw new Error(`Failed to load lookup shard ${shardKey} (${response.status})`)
+            }
+
+            const data = (await response.json()) as LookupShard
+            return [shardKey, data.options] as const
+          }),
+        )
+
+        if (!cancelled) {
+          setLookupShards((current) => {
+            const next = { ...current }
+
+            for (const [shardKey, options] of loadedShards) {
+              next[shardKey] = options
+            }
+
+            return next
+          })
+          setBestPriceError('')
+        }
+      } catch (loadError) {
+        if (!cancelled) {
+          setBestPriceError(
+            loadError instanceof Error ? loadError.message : 'Unable to load matching product shards.',
+          )
+        }
+      } finally {
+        if (!cancelled) {
+          setLookupShardLoading(false)
+        }
+      }
+    }
+
+    void loadLookupShards()
+
+    return () => {
+      cancelled = true
+    }
+  }, [lookupMeta, lookupShards, requiredLookupShardSignature])
+
+  const filteredStores = displayStores
     .filter((store) => activeStore === 'all' || store.id === activeStore)
     .map((store) => ({
       ...store,
@@ -606,7 +770,7 @@ export default function App() {
     .filter((store) => store.deals.length > 0 || (!normalizedQuery && !watchOnly))
   const visibleDealStores = activeStore === 'all' ? [] : filteredStores
 
-  const watchlistDeals = stores.flatMap((store) =>
+  const watchlistDeals = displayStores.flatMap((store) =>
     store.deals
       .filter((deal) => watchlist.includes(deal.id))
       .map((deal) => ({
@@ -615,83 +779,114 @@ export default function App() {
       })),
   )
 
-  const totalDeals = stores.reduce((sum, store) => sum + store.deals.length, 0)
-  const bestPriceOptions = Array.from(
-    (bestPriceFeed?.items ?? []).reduce<
-      Map<
-        string,
-        {
-          key: string
-          title: string
-          detail: string
-          image?: string
-          storeLogo?: string
-          storeCount: number
-          minPrice: number
-          minPriceLabel: string
-        }
-      >
-    >((optionsByTitle, item) => {
-      const key = buildLookupOptionKey(item)
-      const optionStore = storesById.get(item.storeId)
-      const includeDetailInMatch = bestPriceTokens.length > 1
-
-      if (!key) {
-        return optionsByTitle
-      }
-
-      if (isEggLookup && !isShellEggItem(item)) {
-        return optionsByTitle
-      }
-
-      const haystack = buildLookupMatchText(item, includeDetailInMatch)
-
-      if (bestPriceTokens.length === 0 || !bestPriceTokens.every((token) => haystack.includes(token))) {
-        return optionsByTitle
-      }
-
-      const current = optionsByTitle.get(key)
-      const optionTitle = key === 'shell eggs' ? 'Shell Eggs' : item.title
-      const optionDetail =
-        key === 'shell eggs'
-          ? 'Large, white, brown, cage-free, and dozen-count egg listings'
-          : item.detail ?? ''
-
-      if (!current) {
-        optionsByTitle.set(key, {
-          key,
-          title: optionTitle,
-          detail: optionDetail,
-          image: item.image,
-          storeLogo: optionStore?.logo,
-          storeCount: 1,
-          minPrice: item.priceValue,
-          minPriceLabel: item.price,
-        })
-        return optionsByTitle
-      }
-
-      optionsByTitle.set(key, {
-        ...current,
-        image: current.image || item.image,
-        storeLogo: current.storeLogo || optionStore?.logo,
-        detail: current.detail || optionDetail,
-        storeCount: current.storeCount + 1,
-        minPrice: item.priceValue < current.minPrice ? item.priceValue : current.minPrice,
-        minPriceLabel: item.priceValue < current.minPrice ? item.price : current.minPriceLabel,
-      })
-      return optionsByTitle
-    }, new Map()).values(),
-  )
+  const totalDeals = displayStores.reduce((sum, store) => sum + store.deals.length, 0)
+  const indexedCatalogItems = sourceIntel?.overview.totalCatalogItems ?? totalDeals
+  const sourceSignalsCaptured = sourceIntel?.overview.storesWithSignals ?? 0
+  const attentionStoreCount =
+    sourceIntel?.overview.storesNeedingAttention ??
+    displayStores.filter((store) => store.status === 'partial').length
+  const largestCoverageGap = sourceIntel?.overview.largestCoverageGap ?? null
+  const attentionStores = [...sourceIntelStores]
+    .filter((store) => store.status !== 'synced')
     .sort(
       (left, right) =>
-        left.minPrice - right.minPrice ||
-        right.storeCount - left.storeCount ||
-        left.title.localeCompare(right.title),
+        Number(right.status === 'partial') - Number(left.status === 'partial') ||
+        right.coverageGap - left.coverageGap ||
+        left.name.localeCompare(right.name),
+    )
+  const commandStores =
+    sourceIntelStores.length > 0
+      ? sourceIntelStores
+      : displayStores.map((store) => ({
+          id: store.id,
+          name: store.name,
+          logo: store.logo,
+          theme: store.theme,
+          sourceUrl: store.sourceUrl,
+          sourceLabel: store.sourceLabel,
+          officialTitle: store.sourceLabel,
+          officialSummary: store.rangeLabel || store.sourceLabel,
+          officialCount: null,
+          officialSignal: 'Firecrawl signal loading',
+          indexedCount: store.deals.length,
+          liveFeedCount: store.deals.length,
+          coveragePercent: null,
+          coverageGap: 0,
+          status: store.status === 'partial' ? 'partial' : 'watch',
+          statusLabel: store.status === 'partial' ? 'Needs review' : 'Feed only',
+          statusReason:
+            store.warning || 'The command layer is waiting for the latest official-source snapshot for this retailer.',
+          highlights: store.deals
+            .map((deal) => deal.category)
+            .filter((value): value is string => Boolean(value))
+            .slice(0, 3),
+          sourceWindow: '',
+          snapshottedAt: '',
+        }))
+  const comparableLookupCount = lookupMeta?.comparableOptionCount ?? 0
+  const lowestIndexedPrice =
+    lookupMeta?.lowestPrice !== null && lookupMeta?.lowestPrice !== undefined
+      ? lookupMeta.lowestPrice
+      : Number.POSITIVE_INFINITY
+  const loadedLookupOptions = Array.from(
+    requiredLookupShardKeys.reduce<Map<string, LookupOption>>((optionsByKey, shardKey) => {
+      for (const option of lookupShards[shardKey] ?? []) {
+        if (!optionsByKey.has(option.key)) {
+          optionsByKey.set(option.key, option)
+        }
+      }
+
+      return optionsByKey
+    }, new Map()).values(),
+  )
+  const allLoadedLookupOptions = Array.from(
+    Object.values(lookupShards).reduce<Map<string, LookupOption>>((optionsByKey, options) => {
+      for (const option of options) {
+        if (!optionsByKey.has(option.key)) {
+          optionsByKey.set(option.key, option)
+        }
+      }
+
+      return optionsByKey
+    }, new Map()).values(),
+  )
+  const bestPriceOptions = loadedLookupOptions
+    .filter(
+      (option) =>
+        bestPriceTokens.length > 0 &&
+        bestPriceTokens.every((token) => option.searchTokens.includes(token)),
+    )
+    .sort(
+      (left, right) => {
+        const leftTitle = normalizeLookupText(left.title)
+        const rightTitle = normalizeLookupText(right.title)
+        const leftExact = Number(leftTitle === normalizedBestPriceQuery)
+        const rightExact = Number(rightTitle === normalizedBestPriceQuery)
+
+        if (leftExact !== rightExact) {
+          return rightExact - leftExact
+        }
+
+        const leftStartsWith = Number(leftTitle.startsWith(normalizedBestPriceQuery))
+        const rightStartsWith = Number(rightTitle.startsWith(normalizedBestPriceQuery))
+
+        if (leftStartsWith !== rightStartsWith) {
+          return rightStartsWith - leftStartsWith
+        }
+
+        return (
+          left.minPrice - right.minPrice ||
+          right.storeCount - left.storeCount ||
+          left.title.localeCompare(right.title)
+        )
+      },
     )
     .slice(0, 8)
 
-  const bestPriceMatches = (bestPriceFeed?.items ?? [])
+  const selectedLookupOption =
+    allLoadedLookupOptions.find((option) => option.key === bestPriceSelection) ?? null
+  const selectedLookupMatches = selectedLookupOption?.matches ?? null
+  const bestPriceMatches = (selectedLookupMatches ?? [])
     .map((item) => {
       const store = storesById.get(item.storeId)
 
@@ -699,14 +894,10 @@ export default function App() {
         return null
       }
 
-      if (!bestPriceSelection || buildLookupOptionKey(item) !== bestPriceSelection) {
-        return null
-      }
-
       return {
         store,
         item,
-        numericPrice: item.priceValue ?? parsePriceValue(item.price) ?? Number.POSITIVE_INFINITY,
+        numericPrice: item.priceValue,
       }
     })
     .filter(
@@ -714,7 +905,7 @@ export default function App() {
         result,
       ): result is {
         store: StoreData
-        item: BestPriceItem
+        item: LookupMatch
         numericPrice: number
       } => result !== null && Number.isFinite(result.numericPrice),
     )
@@ -732,7 +923,7 @@ export default function App() {
         string,
         {
           store: StoreData
-          item: BestPriceItem
+          item: LookupMatch
           numericPrice: number
         }
       >
@@ -745,6 +936,8 @@ export default function App() {
       return matchesByStore
     }, new Map()).values(),
   )
+  const bestPriceComparisonLoading =
+    Boolean(bestPriceSelection) && lookupShardLoading && selectedLookupMatches === null
 
   function toggleWatch(id: string) {
     setWatchlist((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]))
@@ -773,6 +966,11 @@ export default function App() {
         ? current.storeIds.filter((item) => item !== storeId)
         : [...current.storeIds, storeId],
     }))
+  }
+
+  function openStoreFeed(storeId: string) {
+    setActiveStore(storeId)
+    setActivePage('deals')
   }
 
   async function retryNotifierConnection() {
@@ -904,33 +1102,41 @@ export default function App() {
           <p className="eyebrow">Scraped from official store pages</p>
           <h1>grobots</h1>
           <p className="hero-text">
-            Weekly grocery deal intelligence for Wegmans, Walmart, Aldi, Lidl, Target, and Kroger. Search
-            the live feed, compare stores, track items, and send an iMessage summary on your schedule.
+            Firecrawl-backed grocery intelligence for Wegmans, Walmart, Aldi, Lidl, Target, and Kroger.
+            Monitor source health, spot coverage gaps, compare products, and push a clean iMessage summary
+            without digging through retailer sites one by one.
           </p>
         </div>
 
         <div className="hero-stats">
           <article className="metric-card">
-            <span className="metric-label">Stores tracked</span>
+            <span className="metric-label">Retailers monitored</span>
             <strong>{stores.length || 6}</strong>
           </article>
           <article className="metric-card">
-            <span className="metric-label">Deals scraped</span>
-            <strong>{totalDeals}</strong>
+            <span className="metric-label">Catalog items indexed</span>
+            <strong>{indexedCatalogItems.toLocaleString()}</strong>
           </article>
           <article className="metric-card">
-            <span className="metric-label">Watchlist</span>
-            <strong>{watchlistDeals.length}</strong>
+            <span className="metric-label">Official source signals</span>
+            <strong>{sourceIntelLoading ? 'Refreshing...' : sourceSignalsCaptured.toLocaleString()}</strong>
           </article>
           <article className="metric-card">
-            <span className="metric-label">Last refresh</span>
-            <strong>{feed ? formatTimestamp(feed.generatedAt) : 'Loading...'}</strong>
+            <span className="metric-label">Stores needing attention</span>
+            <strong>{attentionStoreCount.toLocaleString()}</strong>
           </article>
         </div>
       </header>
 
       <main className="content-shell">
         <nav className="page-tabs" aria-label="Primary workspace tabs">
+          <button
+            type="button"
+            className={`page-tab ${activePage === 'command' ? 'is-active' : ''}`}
+            onClick={() => setActivePage('command')}
+          >
+            Command center
+          </button>
           <button
             type="button"
             className={`page-tab ${activePage === 'deals' ? 'is-active' : ''}`}
@@ -960,6 +1166,186 @@ export default function App() {
             Watchlist
           </button>
         </nav>
+
+        {activePage === 'command' ? (
+          <section className="page-panel">
+            <div className="page-panel-header">
+              <div>
+                <p className="section-kicker">Command center</p>
+                <h2>Executive grocery snapshot</h2>
+              </div>
+              <p>
+                Firecrawl snapshots of the official store pages, indexed catalog coverage, and the fastest next
+                actions for price checks, store review, and summary delivery.
+              </p>
+            </div>
+
+            <section className="command-shell">
+              <section className="command-metrics" aria-label="Executive metrics">
+                <article className="command-metric-card">
+                  <span className="lookup-brief-label">Feed refresh</span>
+                  <strong>{feed ? formatTimestamp(feed.generatedAt) : 'Loading...'}</strong>
+                  <p>The published store feed and price index were last rebuilt at this time.</p>
+                </article>
+                <article className="command-metric-card">
+                  <span className="lookup-brief-label">Coverage gap</span>
+                  <strong>
+                    {largestCoverageGap
+                      ? `${largestCoverageGap.name} +${largestCoverageGap.gap.toLocaleString()}`
+                      : 'No major gap'}
+                  </strong>
+                  <p>The biggest delta between the indexed catalog and the current official source signal.</p>
+                </article>
+                <article className="command-metric-card">
+                  <span className="lookup-brief-label">Cross-store groups</span>
+                  <strong>{lookupMeta ? lookupMeta.optionCount.toLocaleString() : 'Indexing...'}</strong>
+                  <p>Grouped products available for exact-item comparison without loading the entire catalog in-browser.</p>
+                </article>
+                <article className="command-metric-card">
+                  <span className="lookup-brief-label">Lowest indexed floor</span>
+                  <strong>{Number.isFinite(lowestIndexedPrice) ? `$${lowestIndexedPrice.toFixed(2)}` : 'N/A'}</strong>
+                  <p>The current lowest indexed price across the tracked assortment.</p>
+                </article>
+              </section>
+
+              {sourceIntelLoading ? (
+                <div className="empty-state compact-state">Refreshing official source snapshots for the command center...</div>
+              ) : null}
+
+              <section className="command-layout">
+                <div className="command-main">
+                  <section className="command-panel-card">
+                    <div className="section-heading">
+                      <div>
+                        <p className="section-kicker">Source health</p>
+                        <h2>Retailer command board</h2>
+                      </div>
+                      <p>
+                        Official source signals are captured with Firecrawl, then compared with the indexed catalog that powers lookup and the live feed.
+                      </p>
+                    </div>
+
+                    <div className="command-store-grid">
+                      {commandStores.map((store) => (
+                        <article key={store.id} className="command-store-card">
+                          <div className="command-store-top">
+                            <div className="store-heading">
+                              <img src={store.logo} alt={`${store.name} logo`} className="store-logo" />
+                              <div>
+                                <h3>{store.name}</h3>
+                                <p>{store.officialTitle}</p>
+                              </div>
+                            </div>
+                            <span className={`status-badge status-${store.status}`}>{store.statusLabel}</span>
+                          </div>
+
+                          <p className="command-store-summary">{store.officialSummary}</p>
+
+                          <div className="command-store-metrics">
+                            <div>
+                              <span>Indexed</span>
+                              <strong>{store.indexedCount.toLocaleString()}</strong>
+                            </div>
+                            <div>
+                              <span>Official signal</span>
+                              <strong>{store.officialSignal}</strong>
+                            </div>
+                            <div>
+                              <span>Coverage</span>
+                              <strong>
+                                {store.coveragePercent !== null ? `${store.coveragePercent}%` : `${store.liveFeedCount} live cards`}
+                              </strong>
+                            </div>
+                          </div>
+
+                          <p className="command-store-reason">{store.statusReason}</p>
+
+                          {store.highlights.length > 0 ? (
+                            <div className="command-highlight-row">
+                              {store.highlights.map((highlight) => (
+                                <span key={highlight} className="deal-tag">
+                                  {highlight}
+                                </span>
+                              ))}
+                            </div>
+                          ) : null}
+
+                          <div className="command-actions">
+                            <button type="button" className="store-jump" onClick={() => openStoreFeed(store.id)}>
+                              Open feed
+                            </button>
+                            <a href={store.sourceUrl} target="_blank" rel="noreferrer" className="source-link">
+                              Official page
+                            </a>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  </section>
+                </div>
+
+                <aside className="command-side">
+                  <section className="command-panel-card">
+                    <div className="section-heading">
+                      <div>
+                        <p className="section-kicker">Attention queue</p>
+                        <h2>What needs action</h2>
+                      </div>
+                    </div>
+
+                    {attentionStores.length > 0 ? (
+                      <div className="attention-list">
+                        {attentionStores.map((store) => (
+                          <article key={store.id} className="attention-item">
+                            <div>
+                              <strong>{store.name}</strong>
+                              <p>{store.statusReason}</p>
+                            </div>
+                            <button type="button" className="store-jump" onClick={() => openStoreFeed(store.id)}>
+                              Review
+                            </button>
+                          </article>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="empty-state compact-state">All tracked retailers are currently reporting healthy source coverage.</div>
+                    )}
+                  </section>
+
+                  <section className="command-panel-card">
+                    <div className="section-heading">
+                      <div>
+                        <p className="section-kicker">Quick actions</p>
+                        <h2>Jump straight into work</h2>
+                      </div>
+                    </div>
+
+                    <div className="command-action-stack">
+                      <button type="button" className="toggle-btn" onClick={() => setActivePage('lookup')}>
+                        Compare an item now
+                      </button>
+                      <button type="button" className="toggle-btn" onClick={() => setActivePage('summary')}>
+                        Open iMessage summary
+                      </button>
+                      <button type="button" className="toggle-btn" onClick={() => setActivePage('watchlist')}>
+                        Review tracked items
+                      </button>
+                    </div>
+
+                    <div className="command-note-block">
+                      <p className="catalog-meta">
+                        Source intelligence refreshed {sourceIntel ? formatTimestamp(sourceIntel.generatedAt) : 'from the latest available feed'}.
+                      </p>
+                      <p className="catalog-meta">
+                        {sourceIntel?.overview.comparableOptionCount ?? comparableLookupCount} matched products are ready for cross-store comparison.
+                      </p>
+                    </div>
+                  </section>
+                </aside>
+              </section>
+            </section>
+          </section>
+        ) : null}
 
         {activePage === 'deals' ? (
           <>
@@ -1034,32 +1420,45 @@ export default function App() {
                 </section>
 
                 <section className="store-grid">
-                  {stores.map((store) => (
-                    <article
-                      key={store.id}
-                      className={`store-card ${activeStore === store.id ? 'is-selected' : ''}`}
-                      style={{ '--store-theme': store.theme } as CSSProperties}
-                    >
-                      <div className="store-card-top">
-                        <img src={store.logo} alt={`${store.name} logo`} className="store-logo" />
-                        <button type="button" className="store-jump" onClick={() => setActiveStore(store.id)}>
-                          Focus
-                        </button>
-                      </div>
+                  {displayStores.map((store) => {
+                    const storeIntel = sourceIntelById.get(store.id)
 
-                      <h2>{store.name}</h2>
-                      <p>{store.rangeLabel || store.sourceLabel}</p>
+                    return (
+                      <article
+                        key={store.id}
+                        className={`store-card ${activeStore === store.id ? 'is-selected' : ''}`}
+                        style={{ '--store-theme': store.theme } as CSSProperties}
+                      >
+                        <div className="store-card-top">
+                          <img src={store.logo} alt={`${store.name} logo`} className="store-logo" />
+                          <div className="store-card-actions">
+                            {storeIntel ? (
+                              <span className={`status-badge status-${storeIntel.status}`}>{storeIntel.statusLabel}</span>
+                            ) : null}
+                            <button type="button" className="store-jump" onClick={() => setActiveStore(store.id)}>
+                              Focus
+                            </button>
+                          </div>
+                        </div>
 
-                      <div className="store-meta">
-                        <span>{store.deals.length} deals</span>
-                        <span>{formatTimestamp(store.fetchedAt)}</span>
-                      </div>
+                        <h2>{store.name}</h2>
+                        <p>{storeIntel?.officialSignal || store.rangeLabel || store.sourceLabel}</p>
 
-                      <a href={store.sourceUrl} target="_blank" rel="noreferrer" className="source-link">
-                        Open official source
-                      </a>
-                    </article>
-                  ))}
+                        <div className="store-meta">
+                          <span>{(storeIntel?.indexedCount ?? store.deals.length).toLocaleString()} indexed</span>
+                          <span>{formatTimestamp(store.fetchedAt)}</span>
+                        </div>
+
+                        {storeIntel && storeIntel.coveragePercent !== null ? (
+                          <p className="store-subtle">Coverage: {storeIntel.coveragePercent}% of the current official source signal.</p>
+                        ) : null}
+
+                        <a href={store.sourceUrl} target="_blank" rel="noreferrer" className="source-link">
+                          Open official source
+                        </a>
+                      </article>
+                    )
+                  })}
                 </section>
               </section>
             </section>
@@ -1147,15 +1546,38 @@ export default function App() {
 
         {activePage === 'lookup' ? (
           <section className="page-panel">
-            <div className="page-panel-header">
-              <div>
-                <p className="section-kicker">Cross-store lookup</p>
-                <h2>Today&apos;s best price</h2>
+              <div className="page-panel-header">
+                <div>
+                  <p className="section-kicker">Cross-store lookup</p>
+                  <h2>Today&apos;s best price</h2>
+                </div>
+                <p>Choose the exact item you want, then compare the lowest current price and direct links across stores.</p>
               </div>
-              <p>Choose the exact item you want, then compare the lowest current price and direct links across stores.</p>
-            </div>
 
             <section className="best-price-shell">
+              <section className="lookup-brief" aria-label="Lookup performance summary">
+                <article className="lookup-brief-card">
+                  <span className="lookup-brief-label">Lookup status</span>
+                  <strong>{lookupMeta ? 'Ready instantly' : bestPriceLoading ? 'Indexing' : 'Standby'}</strong>
+                  <p>Lookup metadata loads immediately and matching product shards stream in only when the query needs them.</p>
+                </article>
+                <article className="lookup-brief-card">
+                  <span className="lookup-brief-label">Grouped products</span>
+                  <strong>{lookupMeta ? lookupMeta.optionCount.toLocaleString() : '...'}</strong>
+                  <p>Normalized product groups built from the live feed for faster exact-item selection.</p>
+                </article>
+                <article className="lookup-brief-card">
+                  <span className="lookup-brief-label">Cross-store matches</span>
+                  <strong>{comparableLookupCount.toLocaleString()}</strong>
+                  <p>Products currently matched across two or more retailers and ready for side-by-side comparison.</p>
+                </article>
+                <article className="lookup-brief-card">
+                  <span className="lookup-brief-label">Lowest indexed price</span>
+                  <strong>{Number.isFinite(lowestIndexedPrice) ? `$${lowestIndexedPrice.toFixed(2)}` : 'N/A'}</strong>
+                  <p>Fastest signal for price floor movement across the indexed assortment right now.</p>
+                </article>
+              </section>
+
               <label className="search-panel best-price-search">
                 <span>Item search</span>
                 <input
@@ -1184,8 +1606,8 @@ export default function App() {
                       }}
                     >
                       <img
-                        src={option.image || option.storeLogo || ''}
-                        alt={option.image ? option.title : `${option.title} fallback`}
+                        src={option.image || storesById.get(option.primaryStoreId)?.logo || ''}
+                        alt={option.title}
                         className="lookup-option-image"
                       />
                       <span className="lookup-option-copy">
@@ -1217,22 +1639,25 @@ export default function App() {
                   Search for an item, then choose the exact product from the dropdown to compare prices across stores.
                 </div>
               ) : null}
-              {bestPriceTokens.length > 0 && bestPriceLoading ? (
-                <div className="empty-state compact-state">Loading the broader product catalog...</div>
+              {bestPriceTokens.length > 0 && (bestPriceLoading || !lookupMeta) ? (
+                <div className="empty-state compact-state">Loading matching product groups...</div>
               ) : null}
               {bestPriceError ? <p className="warning-banner">{bestPriceError}</p> : null}
-              {bestPriceFeed ? (
+              {lookupMeta ? (
                 <p className="catalog-meta">
-                  Catalog updated {formatTimestamp(bestPriceFeed.generatedAt)} across {bestPriceFeed.itemCount} items.
+                  Lookup index updated {formatTimestamp(lookupMeta.generatedAt)} across {lookupMeta.optionCount} grouped products from {lookupMeta.itemCount} current listings.
                 </p>
               ) : null}
-              {bestPriceTokens.length > 0 && !bestPriceLoading && bestPriceOptions.length === 0 ? (
+              {lookupMeta && bestPriceTokens.length > 0 && !bestPriceLoading && bestPriceOptions.length === 0 ? (
                 <div className="empty-state compact-state">No current deal matches that search.</div>
               ) : null}
-              {bestPriceTokens.length > 0 && !bestPriceLoading && bestPriceOptions.length > 0 && !bestPriceSelection ? (
+              {lookupMeta && bestPriceTokens.length > 0 && !bestPriceLoading && bestPriceOptions.length > 0 && !bestPriceSelection ? (
                 <div className="empty-state compact-state">Choose the exact item from the dropdown to compare store prices.</div>
               ) : null}
-              {bestPriceSelection && !bestPriceLoading && !bestPriceWinner ? (
+              {bestPriceComparisonLoading ? (
+                <div className="empty-state compact-state">Loading store-by-store comparisons...</div>
+              ) : null}
+              {bestPriceSelection && !bestPriceLoading && !bestPriceComparisonLoading && !bestPriceWinner ? (
                 <div className="empty-state compact-state">That item is not currently priced across the tracked stores.</div>
               ) : null}
 
@@ -1240,10 +1665,10 @@ export default function App() {
                 <div className="best-price-layout">
                   <article className="best-price-card">
                     <div className="best-price-card-top">
-                      <div className="store-heading">
-                        <img
-                          src={bestPriceWinner.item.image || bestPriceWinner.store.logo}
-                          alt={bestPriceWinner.item.image ? bestPriceWinner.item.title : `${bestPriceWinner.store.name} logo`}
+                        <div className="store-heading">
+                          <img
+                            src={selectedLookupOption?.image || bestPriceWinner.store.logo}
+                            alt={bestPriceWinner.item.title}
                           className="deal-image best-price-image"
                         />
                         <div>
@@ -1279,7 +1704,7 @@ export default function App() {
                         <div className="cross-check-grid">
                           {bestPriceCrossChecks.map(({ store, item }) => (
                             <a
-                              key={`${store.id}-${item.id}`}
+                              key={store.id}
                               href={item.link}
                               target="_blank"
                               rel="noreferrer"
@@ -1297,7 +1722,7 @@ export default function App() {
 
                   <div className="best-price-results">
                     {bestPriceShortlist.map(({ store, item }, index) => (
-                      <article key={item.id} className="best-price-row">
+                      <article key={store.id} className="best-price-row">
                         <div className="best-price-rank">{index + 1}</div>
                         <img src={store.logo} alt={`${store.name} logo`} className="deal-logo" />
                         <div className="best-price-copy">

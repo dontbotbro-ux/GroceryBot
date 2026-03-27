@@ -222,6 +222,190 @@ a {
   gap: 18px;
 }
 
+.command-shell,
+.command-panel-card {
+  display: grid;
+  gap: 18px;
+}
+
+.command-metrics,
+.command-store-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.command-metrics {
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.command-metric-card,
+.command-panel-card {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: var(--paper);
+  box-shadow: var(--shadow);
+}
+
+.command-metric-card {
+  display: grid;
+  gap: 8px;
+  min-height: 134px;
+}
+
+.command-metric-card strong {
+  font-family: 'IBM Plex Sans Condensed', sans-serif;
+  font-size: 1.05rem;
+  line-height: 1.1;
+}
+
+.command-metric-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.45;
+}
+
+.command-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.75fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.command-main,
+.command-side {
+  display: grid;
+  gap: 18px;
+}
+
+.command-store-grid {
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.command-store-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(247, 244, 238, 0.88)),
+    linear-gradient(140deg, rgba(31, 74, 52, 0.06), transparent 68%);
+}
+
+.command-store-top,
+.attention-item,
+.store-card-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.command-store-top h3,
+.attention-item strong {
+  margin: 0;
+  font-family: 'IBM Plex Sans Condensed', sans-serif;
+  font-size: 1rem;
+  letter-spacing: -0.02em;
+}
+
+.command-store-top p,
+.command-store-summary,
+.command-store-reason,
+.attention-item p,
+.store-subtle {
+  margin: 0;
+  color: var(--muted);
+}
+
+.command-store-summary,
+.command-store-reason,
+.attention-item p,
+.store-subtle {
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.command-store-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.command-store-metrics div {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid rgba(31, 39, 31, 0.08);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.68);
+}
+
+.command-store-metrics span {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.command-store-metrics strong {
+  font-size: 0.9rem;
+  line-height: 1.3;
+}
+
+.command-highlight-row,
+.command-action-stack,
+.attention-list,
+.command-note-block {
+  display: grid;
+  gap: 10px;
+}
+
+.command-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.status-synced {
+  background: rgba(22, 163, 74, 0.12);
+  color: #116533;
+}
+
+.status-watch {
+  background: rgba(217, 119, 6, 0.12);
+  color: #9a5807;
+}
+
+.status-partial {
+  background: rgba(233, 104, 45, 0.14);
+  color: #ab491f;
+}
+
+.attention-item {
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(31, 39, 31, 0.08);
+}
+
+.attention-item:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
 .page-panel-header {
   display: flex;
   align-items: flex-end;
@@ -575,6 +759,45 @@ a {
 .best-price-shell {
   display: grid;
   gap: 18px;
+}
+
+.lookup-brief {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.lookup-brief-card {
+  display: grid;
+  gap: 8px;
+  min-height: 138px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(249, 247, 243, 0.94));
+  box-shadow: 0 12px 32px rgba(20, 29, 22, 0.05);
+}
+
+.lookup-brief-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.lookup-brief-card strong {
+  font-family: 'IBM Plex Sans Condensed', sans-serif;
+  font-size: 1rem;
+  line-height: 1.1;
+}
+
+.lookup-brief-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.74rem;
+  line-height: 1.45;
 }
 
 .best-price-search {
@@ -1094,6 +1317,7 @@ a {
     grid-template-columns: 1fr;
   }
 
+  .command-layout,
   .best-price-layout {
     grid-template-columns: 1fr;
   }
@@ -1143,6 +1367,7 @@ a {
     align-items: flex-start;
   }
 
+  .command-store-metrics,
   .lookup-option,
   .lookup-selection-bar {
     grid-template-columns: 1fr;
@@ -1183,6 +1408,7 @@ a {
   }
 
   .deal-grid,
+  .command-store-grid,
   .watchlist-grid,
   .store-grid {
     grid-template-columns: 1fr;

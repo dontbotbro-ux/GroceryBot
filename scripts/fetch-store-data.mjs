@@ -1,4 +1,5 @@
 import fs from 'node:fs/promises'
+import os from 'node:os'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import vm from 'node:vm'
@@ -11,6 +12,8 @@ const publicDir = path.join(rootDir, 'public')
 const logosDir = path.join(publicDir, 'logos')
 const outputFile = path.join(publicDir, 'store-data.json')
 const catalogOutputFile = path.join(publicDir, 'best-price-data.json')
+const codexConfigPath = path.join(os.homedir(), '.codex', 'config.toml')
+const firecrawlApiBaseUrl = process.env.FIRECRAWL_API_BASE_URL?.trim() || 'https://api.firecrawl.dev/v2'
 
 const userAgent =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
@@ -55,6 +58,9 @@ const krogerSeedProducts = [
 
 const krogerApiBaseUrl = 'https://api.kroger.com/v1'
 const krogerApiScopes = 'product.compact profile.compact'
+const htmlCache = new Map()
+let cachedFirecrawlApiKey
+let firecrawlConfigLoaded = false
 
 
 export const stores = [
@@ -158,19 +164,70 @@ function absoluteUrl(baseUrl, href) {
   return new URL(href, baseUrl).toString()
 }
 
+function dealQualityScore(deal) {
+  let score = 0
+
+  if (deal.link) {
+    score += 4
+  }
+
+  if (deal.image) {
+    score += 3
+  }
+
+  if (deal.previousPrice) {
+    score += 2
+  }
+
+  if (deal.savings) {
+    score += 2
+  }
+
+  if (deal.expires) {
+    score += 1
+  }
+
+  score += Math.min(normalizeText(deal.detail ?? '').length, 80) / 80
+  return score
+}
+
+function mergeDeals(current, candidate) {
+  const currentScore = dealQualityScore(current)
+  const candidateScore = dealQualityScore(candidate)
+  const preferred = candidateScore > currentScore ? candidate : current
+  const fallback = preferred === candidate ? current : candidate
+
+  return {
+    ...fallback,
+    ...preferred,
+    previousPrice: preferred.previousPrice || fallback.previousPrice,
+    savings: preferred.savings || fallback.savings,
+    detail: preferred.detail || fallback.detail,
+    expires: preferred.expires || fallback.expires,
+    category: preferred.category || fallback.category,
+    link: preferred.link || fallback.link,
+    image: preferred.image || fallback.image,
+  }
+}
+
 function dedupeDeals(deals) {
-  const seen = new Set()
+  const byKey = new Map()
 
-  return deals.filter((deal) => {
-    const key = `${deal.title}::${deal.price}`.toLowerCase()
+  for (const deal of deals) {
+    const normalizedTitle = normalizeText(deal.title).toLowerCase()
+    const normalizedPrice = normalizeText(deal.price).toLowerCase()
+    const key = `${normalizedTitle}::${normalizedPrice}`
+    const current = byKey.get(key)
 
-    if (seen.has(key)) {
-      return false
+    if (!current) {
+      byKey.set(key, deal)
+      continue
     }
 
-    seen.add(key)
-    return true
-  })
+    byKey.set(key, mergeDeals(current, deal))
+  }
+
+  return [...byKey.values()]
 }
 
 function dealScore(deal) {
@@ -282,6 +339,14 @@ function buildFallbackWarning(currentWarning, previousStore) {
   return `${base} Showing the last successful stored results instead.`
 }
 
+function isSuspiciouslyThinResult(currentCount, previousCount) {
+  if (!previousCount || previousCount < 50) {
+    return false
+  }
+
+  return currentCount < Math.max(10, Math.floor(previousCount * 0.15))
+}
+
 function stripHtml(value = '') {
   const $ = cheerio.load(`<div>${String(value)}</div>`)
   return normalizeText($.text())
@@ -323,12 +388,9 @@ function dedupeCatalogItems(items) {
   const byKey = new Map()
 
   for (const item of items) {
-    const key = [
-      item.storeId,
-      (item.link ?? '').toLowerCase(),
-      item.title.toLowerCase(),
-      (item.detail ?? '').toLowerCase(),
-    ].join('::')
+    const normalizedTitle = item.title.toLowerCase()
+    const normalizedPrice = Number.isFinite(item.priceValue) ? item.priceValue.toFixed(2) : item.price
+    const key = [item.storeId, normalizedTitle, normalizedPrice].join('::')
     const current = byKey.get(key)
 
     if (!current) {
@@ -339,7 +401,8 @@ function dedupeCatalogItems(items) {
     const shouldReplace =
       item.priceValue < current.priceValue ||
       (!current.image && item.image) ||
-      (!current.link && item.link)
+      (!current.link && item.link) ||
+      normalizeText(item.detail ?? '').length > normalizeText(current.detail ?? '').length
 
     if (shouldReplace) {
       byKey.set(key, {
@@ -461,7 +524,31 @@ async function mapWithConcurrency(items, limit, mapper) {
   return results
 }
 
-async function fetchHtml(url) {
+async function getFirecrawlApiKey() {
+  if (process.env.FIRECRAWL_API_KEY?.trim()) {
+    return process.env.FIRECRAWL_API_KEY.trim()
+  }
+
+  if (firecrawlConfigLoaded) {
+    return cachedFirecrawlApiKey
+  }
+
+  firecrawlConfigLoaded = true
+
+  try {
+    const config = await fs.readFile(codexConfigPath, 'utf8')
+    const match = config.match(
+      /\[mcp_servers\.firecrawl\.env\][\s\S]*?FIRECRAWL_API_KEY\s*=\s*"([^"]+)"/,
+    )
+    cachedFirecrawlApiKey = match?.[1]?.trim() || ''
+  } catch {
+    cachedFirecrawlApiKey = ''
+  }
+
+  return cachedFirecrawlApiKey
+}
+
+async function fetchHtmlDirect(url) {
   let response
 
   try {
@@ -481,6 +568,68 @@ async function fetchHtml(url) {
   }
 
   return response.text()
+}
+
+async function fetchHtmlWithFirecrawl(url, apiKey) {
+  const response = await fetch(`${firecrawlApiBaseUrl}/scrape`, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      url,
+      formats: ['rawHtml'],
+      onlyMainContent: false,
+      maxAge: 0,
+      timeout: 120000,
+    }),
+    signal: AbortSignal.timeout(130000),
+  })
+
+  if (!response.ok) {
+    throw new Error(`Firecrawl returned ${response.status}`)
+  }
+
+  const payload = await response.json()
+  const html = payload?.data?.rawHtml
+
+  if (typeof html !== 'string' || html.length === 0) {
+    throw new Error('Firecrawl did not return rawHtml.')
+  }
+
+  return html
+}
+
+async function fetchHtml(url) {
+  if (htmlCache.has(url)) {
+    return htmlCache.get(url)
+  }
+
+  const promise = (async () => {
+    const firecrawlApiKey = await getFirecrawlApiKey()
+
+    if (firecrawlApiKey) {
+      try {
+        return await fetchHtmlWithFirecrawl(url, firecrawlApiKey)
+      } catch (error) {
+        console.warn(
+          `[firecrawl] ${url}: ${error instanceof Error ? error.message : 'Unable to scrape page'}; falling back to direct fetch`,
+        )
+      }
+    }
+
+    return fetchHtmlDirect(url)
+  })()
+
+  htmlCache.set(url, promise)
+
+  try {
+    return await promise
+  } catch (error) {
+    htmlCache.delete(url)
+    throw error
+  }
 }
 
 function parseKrogerState(html) {
@@ -1491,18 +1640,7 @@ async function scrapeWegmansCatalog() {
 
 async function scrapeAldiCatalogPage(url, sourceLabel) {
   const config = stores.find((store) => store.id === 'aldi')
-  const response = await fetch(url, {
-    headers: {
-      'user-agent': userAgent,
-      'accept-language': 'en-US,en;q=0.9',
-    },
-  })
-
-  if (!response.ok) {
-    throw new Error(`ALDI catalog returned ${response.status}`)
-  }
-
-  const html = await response.text()
+  const html = await fetchHtml(url)
   const $ = cheerio.load(html)
   const items = buildCatalogItems(
     config,
@@ -1907,12 +2045,23 @@ async function scrapeBestPriceCatalog(browser) {
   const allItems = []
 
   for (const [storeId, task] of tasks) {
+    const previousItems = existingCatalog?.items?.filter((item) => item.storeId === storeId) ?? []
+
     try {
       const items = await task()
+      const shouldUseCachedItems =
+        previousItems.length > 0 &&
+        (items.length === 0 || isSuspiciouslyThinResult(items.length, previousItems.length))
+
+      if (shouldUseCachedItems) {
+        console.log(`[catalog] ${storeId}: using ${previousItems.length} cached items`)
+        allItems.push(...previousItems)
+        continue
+      }
+
       console.log(`[catalog] ${storeId}: ${items.length} items`)
       allItems.push(...items)
     } catch (error) {
-      const previousItems = existingCatalog?.items?.filter((item) => item.storeId === storeId) ?? []
       console.warn(`[catalog] ${storeId}: ${error instanceof Error ? error.message : 'Unknown catalog failure'}`)
 
       if (previousItems.length > 0) {
@@ -1978,7 +2127,9 @@ export async function scrapeAllStores() {
     for (const store of stores) {
       const result = await scrapeStore(store, browser, logos[store.id] ?? store.logoUrl, fetchedAt)
       const previousStore = existingStores.get(store.id)
-      const shouldUseFallback = result.deals.length === 0 && previousStore?.deals?.length > 0
+      const shouldUseFallback =
+        previousStore?.deals?.length > 0 &&
+        (result.deals.length === 0 || isSuspiciouslyThinResult(result.deals.length, previousStore.deals.length))
       const finalStore = shouldUseFallback
         ? {
             ...previousStore,
@@ -1986,7 +2137,12 @@ export async function scrapeAllStores() {
             sourceUrl: store.sourceUrl,
             sourceLabel: store.sourceLabel,
             theme: store.theme,
-            warning: buildFallbackWarning(result.warning, previousStore),
+            warning: buildFallbackWarning(
+              result.deals.length === 0
+                ? result.warning
+                : 'The live scrape returned an unusually small result set during this build.',
+              previousStore,
+            ),
           }
         : result
 
